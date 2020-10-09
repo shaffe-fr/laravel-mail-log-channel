@@ -27,6 +27,7 @@ composer require shaffe/laravel-mail-log-channel
 
  Laravel  | Package |
 :---------|:--------|
+ 8.x      | ^2.0   |
  7.x      | ^2.0   |
  6.x      | ^2.0   |
  5.6.x    | ^1.0   |
