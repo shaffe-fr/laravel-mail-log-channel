@@ -2,9 +2,11 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
-## 2.1.0 - 2021-02-17
+## 2.2.0 - 2022-02-09
 
-Sorry for the inconvenience of the 2.0.2 release that didn't match this package standard.
+- add support for Laravel 9 (thanks to @hetznet #3)
+
+## 2.1.0 - 2021-02-17
 
 - add support for Laravel 8 (thanks to @jbeales #1)
 
