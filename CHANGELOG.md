@@ -2,37 +2,41 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 2.2.1 - 2023-01-11
+
+- Fix issue where subjects were empty on content with >255 characters (thanks to @dev-idsys-mi #5)
+
 ## 2.2.0 - 2022-02-09
 
-- add support for Laravel 9 (thanks to @hetznet #3)
+- Add support for Laravel 9 (thanks to @hetznet #3)
 
 ## 2.1.0 - 2021-02-17
 
-- add support for Laravel 8 (thanks to @jbeales #1)
+- Add support for Laravel 8 (thanks to @jbeales #1)
 
 ## 2.0.2 - 2020-02-21
 
 **DEPRECATED RELEASE**
-- add support for Laravel 8 (thanks to @jbeales #1)
+- Add support for Laravel 8 (thanks to @jbeales #1)
 
 ## 2.0.1 - 2020-02-21
 
-- support multiple `to` configuration formats
+- Support multiple `to` configuration formats
 
 ## 2.0.0 - 2020-01-29
 
-- add support for Laravel 6 and 7 (thanks to @jbeales https://github.com/designmynight/laravel-log-mailer/pull/7)
-- remove extra configuration and view files
-- improve exception layout in mails
+- Add support for Laravel 6 and 7 (thanks to @jbeales https://github.com/designmynight/laravel-log-mailer/pull/7)
+- Remove extra configuration and view files
+- Improve exception layout in mails
 
 ## 1.0.2 - 2018-09-09
 
-- fix logging levels
+- Fix logging levels
 
 ## 1.0.1 - 2018-09-05
 
-- fix dependancy
+- Fix dependency
 
 ## 1.0.0 - 2018-09-04
 
-- initial release
+- Initial release
