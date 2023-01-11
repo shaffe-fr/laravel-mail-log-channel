@@ -49,7 +49,12 @@ class MailableHandler extends MailHandler
      */
     protected function setSubject(array $records)
     {
-        $this->mailable->subject($this->subjectFormatter->format($this->getHighestRecord($records)));
+        $formatted = $this->subjectFormatter->format($this->getHighestRecord($records));
+
+        if (strlen($formatted) > 255)
+            $formatted = substr($formatted, 0, 252) . '...';
+
+        $this->mailable->subject($formatted);
     }
 
     /**
