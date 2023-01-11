@@ -6,6 +6,7 @@ use Illuminate\Mail\Mailable;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\MailHandler;
 use Monolog\Logger;
+use Illuminate\Support\Str;
 
 class MailableHandler extends MailHandler
 {
@@ -49,7 +50,9 @@ class MailableHandler extends MailHandler
      */
     protected function setSubject(array $records)
     {
-        $this->mailable->subject($this->subjectFormatter->format($this->getHighestRecord($records)));
+        $formatted = Str::limit($this->subjectFormatter->format($this->getHighestRecord($records)), 252);
+
+        $this->mailable->subject($formatted);
     }
 
     /**
