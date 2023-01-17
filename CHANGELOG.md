@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 2.3.0 - 2023-01-17
+
+- Add support for Laravel 10
+
 ## 2.2.1 - 2023-01-11
 
 - Fix issue where subjects were empty on content with >255 characters (thanks to @dev-idsys-mi #5)

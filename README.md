@@ -25,10 +25,10 @@ composer require shaffe/laravel-mail-log-channel
 
 ### Laravel version compatibility
 
- Laravel     | Package |
-:------------|:--------|
- 6, 7, 8, 9  | ^2.0    |
- 5.6.x       | ^1.0    |
+ Laravel         | Package |
+:----------------|:--------|
+ 6, 7, 8, 9, 10  | ^2.0    |
+ 5.6.x           | ^1.0    |
 
 The package will automatically register itself if you use Laravel.
 

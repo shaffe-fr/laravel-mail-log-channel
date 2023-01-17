@@ -24,7 +24,7 @@ class MailableHandler extends MailHandler
      *
      * @param  \Illuminate\Mail\Mailable  $mailable
      * @param  \Monolog\Formatter\LineFormatter  $subjectFormatter
-     * @param  int  $level  The minimum logging level at which this handler will be triggered
+     * @param  int|string|\Monolog\Level  $level  The minimum logging level at which this handler will be triggered
      * @param  bool  $bubble  Whether the messages that are handled can bubble up the stack or not
      *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
@@ -32,7 +32,7 @@ class MailableHandler extends MailHandler
     public function __construct(
         Mailable $mailable,
         LineFormatter $subjectFormatter,
-        int $level = Logger::DEBUG,
+        $level = Logger::DEBUG,
         bool $bubble = true
     ) {
         parent::__construct($level, $bubble);
