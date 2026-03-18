@@ -10,10 +10,25 @@ This package is a fork of [laravel-log-mailer](https://packagist.org/packages/de
 
 ![image](https://user-images.githubusercontent.com/12199424/45576336-a93c1300-b86e-11e8-9575-d1e4c5ed5dec.png)
 
+## Features
+
+- Structured error emails with clear sections
+- Execution context: HTTP request (method, URL, route, controller, user), Artisan command, or Queue job (connection, queue)
+- Environment badges: app environment, Laravel/PHP versions, server hostname
+- Code snippet with error line highlighted
+- Smart stack trace: application frames visible, vendor frames collapsed
+- SQL queries with execution time (when query log is enabled)
+- Relative file paths for readability
+- Previous exception chain display
+- Clickable file paths to open directly in your editor (via `app.editor` config)
+
 ## Table of contents
 
 * [Installation](#installation)
 * [Configuration](#configuration)
+* [SQL Query Logging](#sql-query-logging)
+* [Editor Links](#editor-links)
+* [Upgrading](#upgrading)
 
 ## Installation
 
@@ -120,3 +135,52 @@ The following `to` config formats are supported:
          ],
      ],
     ```
+
+## SQL Query Logging
+
+If Laravel's query log is enabled, the error email will automatically include the last 10 SQL queries with their execution time. This is the case when you use tools like [Telescope](https://laravel.com/docs/telescope) or [Debugbar](https://github.com/barryvdh/laravel-debugbar) which enable it for you.
+
+The package does not enable the query log itself — it only reads it when available.
+
+## Editor Links
+
+File paths in error emails are clickable if you have configured the `app.editor` option in your Laravel application. Clicking a link will open the file at the correct line in your editor.
+
+Laravel supports this natively since v9. Set it in `config/app.php`:
+
+```php
+'editor' => 'phpstorm',
+```
+
+Or via environment variable:
+
+```env
+APP_EDITOR=phpstorm
+```
+
+Supported editors: `phpstorm`, `vscode`, `vscode-insiders`, `cursor`, `sublime`, `textmate`, `atom`, `nova`, `idea`.
+
+You can also use a custom URL scheme:
+
+```php
+'editor' => [
+    'href' => 'custom://open?file={file}&line={line}',
+],
+```
+
+For remote servers where file paths differ from your local machine, use `base_path` to remap:
+
+```php
+'editor' => [
+    'name' => 'phpstorm',
+    'base_path' => '/local/path/to/project',
+],
+```
+
+## Upgrading
+
+### From v2 to v3
+
+v3 completely redesigns the email output. The HTML format has changed and the `HtmlFormatter::addRow()` method has been removed.
+
+If you extended `HtmlFormatter` or relied on the HTML structure for parsing/filtering, review the new output format. The configuration API is unchanged — no config changes needed.

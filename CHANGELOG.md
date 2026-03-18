@@ -2,6 +2,22 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 3.0.0 - 2026-03-18
+
+- Redesign error mail with structured sections
+- Add execution context (HTTP request, Artisan command, Queue job)
+- Add environment info badges (app env, Laravel/PHP versions, hostname)
+- Add code snippet with error line highlighting
+- Collapse vendor frames in stack trace, show relative paths
+- Add SQL queries section with execution time
+- Add ContextProcessor Monolog processor
+- Add clickable file paths to open in editor (via `app.editor` config)
+
+### Breaking Changes
+
+- HTML output format completely redesigned
+- `HtmlFormatter::addRow()` removed in favor of new section-based rendering
+
 ## 2.6.0 - 2026-03-18
 
 - Add support for Laravel 13

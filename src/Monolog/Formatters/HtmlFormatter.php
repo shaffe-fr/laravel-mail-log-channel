@@ -143,7 +143,11 @@ class HtmlFormatter extends BaseHtmlFormatter
         $output = $this->sectionTitle('Exception');
         $output .= $this->keyValueRow('Class', '<code>' . htmlspecialchars(get_class($exception)) . '</code>');
         $output .= $this->keyValueRow('Message', htmlspecialchars($exception->getMessage()));
-        $output .= $this->keyValueRow('File', '<code>' . htmlspecialchars($this->shortenPath($exception->getFile())) . ':' . $exception->getLine() . '</code>');
+        $output .= $this->keyValueRow('File', $this->fileLink(
+            $exception->getFile(),
+            $exception->getLine(),
+            '<code>' . htmlspecialchars($this->shortenPath($exception->getFile())) . ':' . $exception->getLine() . '</code>'
+        ));
 
         if ($exception->getCode()) {
             $output .= $this->keyValueRow('Code', htmlspecialchars((string) $exception->getCode()));
@@ -155,7 +159,11 @@ class HtmlFormatter extends BaseHtmlFormatter
             $output .= $this->keyValueRow(
                 'Caused by',
                 '<code>' . htmlspecialchars(get_class($previous)) . '</code>: ' . htmlspecialchars($previous->getMessage())
-                . ' in <code>' . htmlspecialchars($this->shortenPath($previous->getFile())) . ':' . $previous->getLine() . '</code>'
+                . ' in ' . $this->fileLink(
+                    $previous->getFile(),
+                    $previous->getLine(),
+                    '<code>' . htmlspecialchars($this->shortenPath($previous->getFile())) . ':' . $previous->getLine() . '</code>'
+                )
             );
         }
 
@@ -189,7 +197,11 @@ class HtmlFormatter extends BaseHtmlFormatter
         $filePath = $this->shortenPath($snippet['file']);
 
         return $this->sectionTitle('Code')
-            . '<tr><td style="padding: 5px 15px;"><code style="font-size: 12px; color: #666;">' . htmlspecialchars($filePath) . '</code></td></tr>'
+            . '<tr><td style="padding: 5px 15px;">' . $this->fileLink(
+                $snippet['file'],
+                $snippet['line'],
+                '<code style="font-size: 12px; color: #666;">' . htmlspecialchars($filePath) . '</code>'
+            ) . '</td></tr>'
             . '<tr><td style="padding: 0 15px 10px;"><table cellspacing="0" cellpadding="0" width="100%" style="border: 1px solid #e5e5e5; border-radius: 4px; overflow: hidden; border-collapse: collapse;">'
             . $code
             . '</table></td></tr>';
@@ -233,9 +245,14 @@ class HtmlFormatter extends BaseHtmlFormatter
             $location = $file ? $this->shortenPath($file) . ':' . $line : '(unknown)';
             $call = $this->formatFrameCall($frame);
 
+            $locationHtml = '<code style="color: #1a1a1a; font-weight: 500;">' . htmlspecialchars($location) . '</code>';
+            if ($file && $line) {
+                $locationHtml = $this->fileLink($file, $line, $locationHtml);
+            }
+
             $output .= '<tr>'
                 . '<td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">'
-                . '<code style="color: #1a1a1a; font-weight: 500;">' . htmlspecialchars($location) . '</code>'
+                . $locationHtml
                 . ($call ? '<br><span style="color: #888; font-size: 12px;">' . htmlspecialchars($call) . '</span>' : '')
                 . '</td></tr>';
         }
@@ -373,5 +390,64 @@ class HtmlFormatter extends BaseHtmlFormatter
             'testing', 'test' => '#2563eb',
             default => '#059669',
         };
+    }
+
+    /**
+     * Known editor URL schemes.
+     */
+    protected array $editorHrefs = [
+        'phpstorm' => 'phpstorm://open?file={file}&line={line}',
+        'vscode' => 'vscode://file/{file}:{line}',
+        'vscode-insiders' => 'vscode-insiders://file/{file}:{line}',
+        'sublime' => 'subl://open?url=file://{file}&line={line}',
+        'textmate' => 'txmt://open?url=file://{file}&line={line}',
+        'atom' => 'atom://core/open/file?filename={file}&line={line}',
+        'nova' => 'nova://core/open/file?filename={file}&line={line}',
+        'idea' => 'idea://open?file={file}&line={line}',
+        'cursor' => 'cursor://file/{file}:{line}',
+    ];
+
+    protected function resolveEditorHref(string $file, ?int $line = null): ?string
+    {
+        try {
+            $editor = config('app.editor');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (!$editor) {
+            return null;
+        }
+
+        $href = is_array($editor) && isset($editor['href'])
+            ? $editor['href']
+            : ($this->editorHrefs[$editor['name'] ?? $editor] ?? sprintf('%s://open?file={file}&line={line}', $editor['name'] ?? $editor));
+
+        $editorBasePath = is_array($editor) ? ($editor['base_path'] ?? false) : false;
+
+        if ($editorBasePath !== false && $this->projectBasePath) {
+            $file = str_replace(
+                str_replace('\\', '/', $this->projectBasePath),
+                str_replace('\\', '/', $editorBasePath),
+                str_replace('\\', '/', $file)
+            );
+        }
+
+        return str_replace(
+            ['{file}', '{line}'],
+            [$file, $line ?? 1],
+            $href,
+        );
+    }
+
+    protected function fileLink(string $file, ?int $line, string $displayHtml): string
+    {
+        $href = $this->resolveEditorHref($file, $line);
+
+        if (!$href) {
+            return $displayHtml;
+        }
+
+        return '<a href="' . htmlspecialchars($href) . '" style="color: inherit; text-decoration: underline; text-decoration-color: #ccc;">' . $displayHtml . '</a>';
     }
 }
