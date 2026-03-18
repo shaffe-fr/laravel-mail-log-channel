@@ -94,7 +94,8 @@ You can specify multiple channels and individually change the recipients, the su
         ],
 
         // Optionally overwrite the subject format pattern
-        // 'subject_format' => env('LOG_MAIL_SUBJECT_FORMAT', '[%datetime%] %level_name%: %message%'),
+        // Available placeholders: %level_name%, %message%, %env%, %context%, %app_name%, %channel%, %datetime%
+        // 'subject_format' => '[%level_name%] [%env%] %context% — %message%',
 
         // Optionally overwrite the mailable template
         // Two variables are sent to the view: `string $content` and `array $records`

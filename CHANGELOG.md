@@ -12,11 +12,13 @@ All notable changes to `laravel-mail-log-channel` will be documented in this fil
 - Add SQL queries section with execution time
 - Add ContextProcessor Monolog processor
 - Add clickable file paths to open in editor (via `app.editor` config)
+- Redesign subject format with custom placeholders (`%level_name%`, `%message%`, `%env%`, `%context%`, `%app_name%`, `%channel%`, `%datetime%`)
 
 ### Breaking Changes
 
 - HTML output format completely redesigned
 - `HtmlFormatter::addRow()` removed in favor of new section-based rendering
+- `subject_format` no longer uses Monolog's `LineFormatter` syntax — uses simple `%placeholder%` replacements instead
 
 ## 2.6.0 - 2026-03-18
 

@@ -4,7 +4,6 @@ namespace Shaffe\MailLogChannel;
 
 use Illuminate\Contracts\Mail\Mailable;
 use InvalidArgumentException;
-use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
 use Shaffe\MailLogChannel\Mail\Log as MailableLog;
 use Shaffe\MailLogChannel\Monolog\Formatters\HtmlFormatter;
@@ -36,7 +35,7 @@ class MailLogger
 
         $mailHandler = new MailableHandler(
             $this->buildMailable(),
-            $this->subjectFormatter(),
+            $this->config('subject_format') ?? '[%level_name%] [%env%] %context% — %message%',
             $this->config('level'),
             $this->config('bubble')
         );
@@ -135,12 +134,6 @@ class MailLogger
      *
      * @return \Monolog\Formatter\LineFormatter
      */
-    protected function subjectFormatter(): LineFormatter
-    {
-        $format = $this->config('subject_format') ?? '[%datetime%] %level_name%: %message%';
-
-        return new LineFormatter($format);
-    }
 
     /**
      * Get the value from the passed in config.
