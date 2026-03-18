@@ -8,8 +8,6 @@ A service provider to add support for logging via email using Laravels built-in 
 
 This package is a fork of [laravel-log-mailer](https://packagist.org/packages/designmynight/laravel-log-mailer) by Steve Porter.
 
-![image](https://user-images.githubusercontent.com/12199424/45576336-a93c1300-b86e-11e8-9575-d1e4c5ed5dec.png)
-
 ## Features
 
 - Structured error emails with clear sections
@@ -22,6 +20,13 @@ This package is a fork of [laravel-log-mailer](https://packagist.org/packages/de
 - Relative file paths for readability
 - Previous exception chain display
 - Clickable file paths to open directly in your editor (via `app.editor` config)
+
+<details>
+<summary>📸 See an example email</summary>
+
+![screenshot](docs/screenshot.png)
+
+</details>
 
 ## Table of contents
 
