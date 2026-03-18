@@ -9,6 +9,7 @@ use Monolog\Logger;
 use Shaffe\MailLogChannel\Mail\Log as MailableLog;
 use Shaffe\MailLogChannel\Monolog\Formatters\HtmlFormatter;
 use Shaffe\MailLogChannel\Monolog\Handlers\MailableHandler;
+use Shaffe\MailLogChannel\Monolog\Processors\ContextProcessor;
 
 class MailLogger
 {
@@ -42,7 +43,10 @@ class MailLogger
 
         $mailHandler->setFormatter(new HtmlFormatter());
 
-        return new Logger('mailable', [$mailHandler]);
+        $logger = new Logger('mailable', [$mailHandler]);
+        $logger->pushProcessor(new ContextProcessor());
+
+        return $logger;
     }
 
     /**
