@@ -93,6 +93,9 @@ You can specify multiple channels and individually change the recipients, the su
             'name' => 'Errors'
         ],
 
+        // Show all vendor frames in stack trace (collapsed by default)
+        // 'collapse_vendor_frames' => true,
+
         // Optionally overwrite the subject format pattern
         // Available placeholders: %level_name%, %message%, %env%, %context%, %app_name%, %channel%, %datetime%
         // 'subject_format' => '[%level_name%] [%env%] %context% — %message%',

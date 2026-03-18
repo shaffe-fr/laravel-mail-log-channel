@@ -10,11 +10,15 @@ class HtmlFormatter extends BaseHtmlFormatter
     /** @var string|null Base path to strip from file paths */
     protected $projectBasePath;
 
-    public function __construct(?string $basePath = null, string $dateFormat = null)
+    /** @var bool Whether to collapse vendor frames in stack trace */
+    protected bool $collapseVendorFrames;
+
+    public function __construct(?string $basePath = null, string $dateFormat = null, bool $collapseVendorFrames = true)
     {
         parent::__construct($dateFormat);
 
         $this->projectBasePath = $basePath ?: $this->detectBasePath();
+        $this->collapseVendorFrames = $collapseVendorFrames;
     }
 
     /**
@@ -231,7 +235,7 @@ class HtmlFormatter extends BaseHtmlFormatter
             $line = $frame['line'] ?? null;
             $isVendor = $file && $this->isVendorFrame($file);
 
-            if ($isVendor) {
+            if ($this->collapseVendorFrames && $isVendor) {
                 $vendorCount++;
                 continue;
             }
@@ -245,7 +249,8 @@ class HtmlFormatter extends BaseHtmlFormatter
             $location = $file ? $this->shortenPath($file) . ':' . $line : '(unknown)';
             $call = $this->formatFrameCall($frame);
 
-            $locationHtml = '<code style="color: #1a1a1a; font-weight: 500;">' . htmlspecialchars($location) . '</code>';
+            $color = $isVendor ? '#bbb' : '#1a1a1a';
+            $locationHtml = '<code style="color: ' . $color . '; font-weight: 500;">' . htmlspecialchars($location) . '</code>';
             if ($file && $line) {
                 $locationHtml = $this->fileLink($file, $line, $locationHtml);
             }

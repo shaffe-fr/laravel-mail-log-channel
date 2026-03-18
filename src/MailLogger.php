@@ -40,7 +40,9 @@ class MailLogger
             $this->config('bubble')
         );
 
-        $mailHandler->setFormatter(new HtmlFormatter());
+        $collapseVendorFrames = $this->config('collapse_vendor_frames') ?? true;
+
+        $mailHandler->setFormatter(new HtmlFormatter(collapseVendorFrames: $collapseVendorFrames));
 
         $logger = new Logger('mailable', [$mailHandler]);
         $logger->pushProcessor(new ContextProcessor());
