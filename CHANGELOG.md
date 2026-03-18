@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 3.0.1 - 2026-03-18
+
+- Fix code snippet gutter width for 3-digit line numbers
+
 ## 3.0.0 - 2026-03-18
 
 - Redesign error mail with structured sections
