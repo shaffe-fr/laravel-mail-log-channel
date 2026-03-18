@@ -19,6 +19,7 @@ All notable changes to `laravel-mail-log-channel` will be documented in this fil
 - HTML output format completely redesigned
 - `HtmlFormatter::addRow()` removed in favor of new section-based rendering
 - `subject_format` no longer uses Monolog's `LineFormatter` syntax — uses simple `%placeholder%` replacements instead
+- Requires PHP 8.1+ and Laravel 10+ (Monolog 3)
 
 ## 2.6.0 - 2026-03-18
 

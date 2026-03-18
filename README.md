@@ -42,16 +42,11 @@ composer require shaffe/laravel-mail-log-channel
 
 | Laravel                      | Package |
 |:-----------------------------|:--------|
-| 6, 7, 8, 9, 10, 11, 12, 13   | ^2.0    |
+| 10, 11, 12, 13              | ^3.0    |
+| 5.6, 6, 7, 8, 9, 10, 11, 12, 13 | ^2.0    |
 | 5.6.x                        | ^1.0    |
 
-The package will automatically register itself if you use Laravel.
-
-For usage with [Lumen](http://lumen.laravel.com), add the service provider in `bootstrap/app.php`.
-
-```php
-$app->register(Shaffe\MailLogChannel\MailLogChannelServiceProvider::class);
-```
+The package will automatically register itself.
 
 ## Configuration
 
@@ -197,5 +192,7 @@ For remote servers where file paths differ from your local machine, use `base_pa
 ### From v2 to v3
 
 v3 completely redesigns the email output. The HTML format has changed and the `HtmlFormatter::addRow()` method has been removed.
+
+v3 requires PHP 8.1+ and Laravel 10+. For older versions, use v2.
 
 If you extended `HtmlFormatter` or relied on the HTML structure for parsing/filtering, review the new output format. The configuration API is unchanged — no config changes needed.
