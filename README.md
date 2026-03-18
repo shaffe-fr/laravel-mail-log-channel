@@ -17,7 +17,8 @@ This package is a fork of [laravel-log-mailer](https://packagist.org/packages/de
 - Environment badges: app environment, Laravel/PHP versions, server hostname
 - Code snippet with error line highlighted
 - Smart stack trace: application frames visible, vendor frames collapsed
-- SQL queries with execution time (when query log is enabled)
+- SQL queries with bindings and execution time
+- Additional context from `Exception::context()` and log record
 - Relative file paths for readability
 - Previous exception chain display
 - Clickable file paths to open directly in your editor (via `app.editor` config)

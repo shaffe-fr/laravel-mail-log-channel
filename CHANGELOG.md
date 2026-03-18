@@ -13,6 +13,8 @@ All notable changes to `laravel-mail-log-channel` will be documented in this fil
 - Add ContextProcessor Monolog processor
 - Add clickable file paths to open in editor (via `app.editor` config)
 - Redesign subject format with custom placeholders (`%level_name%`, `%message%`, `%env%`, `%context%`, `%app_name%`, `%channel%`, `%datetime%`)
+- Add built-in SQL query collector with bindings (enabled by default, configurable via `log_queries`)
+- Display additional context from `Exception::context()` and Monolog record context
 
 ### Breaking Changes
 

@@ -20,6 +20,7 @@
         "illuminate/mail": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/queue": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
         "monolog/monolog": "^3.0"
     },
     "autoload": {
