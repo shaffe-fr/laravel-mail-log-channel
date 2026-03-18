@@ -29,6 +29,7 @@ class ContextProcessor implements ProcessorInterface
         $extra['environment'] = $this->gatherEnvironment();
         $extra['code_snippet'] = $this->extractCodeSnippet($record);
         $extra['sql_queries'] = $this->gatherSqlQueries();
+        $extra['additional_context'] = $this->gatherAdditionalContext($record);
 
         if ($record instanceof LogRecord) {
             return $record->with(extra: $extra);
@@ -215,5 +216,15 @@ class ContextProcessor implements ProcessorInterface
         }
 
         return false;
+    }
+
+    protected function gatherAdditionalContext($record): ?array
+    {
+        $context = $record instanceof LogRecord ? $record->context : ($record['context'] ?? []);
+
+        // Monolog record context (excluding the exception itself)
+        $data = array_diff_key($context, ['exception' => true]);
+
+        return !empty($data) ? $data : null;
     }
 }

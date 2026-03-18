@@ -13,7 +13,7 @@ class HtmlFormatter extends BaseHtmlFormatter
     /** @var bool Whether to collapse vendor frames in stack trace */
     protected bool $collapseVendorFrames;
 
-    public function __construct(?string $basePath = null, string $dateFormat = null, bool $collapseVendorFrames = true)
+    public function __construct(?string $basePath = null, ?string $dateFormat = null, bool $collapseVendorFrames = true)
     {
         parent::__construct($dateFormat);
 
@@ -30,6 +30,7 @@ class HtmlFormatter extends BaseHtmlFormatter
         $output .= $this->buildExecutionContextSection($record);
         $output .= $this->buildEnvironmentSection($record);
         $output .= $this->buildExceptionSection($record);
+        $output .= $this->buildAdditionalContextSection($record);
         $output .= $this->buildCodeSnippetSection($record);
         $output .= $this->buildStackTraceSection($record);
         $output .= $this->buildSqlQueriesSection($record);
@@ -209,6 +210,25 @@ class HtmlFormatter extends BaseHtmlFormatter
             . '<tr><td style="padding: 0 15px 10px;"><table cellspacing="0" cellpadding="0" width="100%" style="border: 1px solid #e5e5e5; border-radius: 4px; overflow: hidden; border-collapse: collapse;">'
             . $code
             . '</table></td></tr>';
+    }
+
+    protected function buildAdditionalContextSection($record): string
+    {
+        $extra = $record instanceof LogRecord ? $record->extra : ($record['extra'] ?? []);
+        $data = $extra['additional_context'] ?? null;
+
+        if (!$data) {
+            return '';
+        }
+
+        $output = $this->sectionTitle('Context');
+
+        foreach ($data as $key => $value) {
+            $display = is_scalar($value) ? (string) $value : json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $output .= $this->keyValueRow((string) $key, '<code>' . htmlspecialchars($display) . '</code>');
+        }
+
+        return $output;
     }
 
     protected function buildStackTraceSection($record): string
