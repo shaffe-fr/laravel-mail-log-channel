@@ -194,7 +194,7 @@ class HtmlFormatter extends BaseHtmlFormatter
             $lineNumColor = $isError ? '#e53e3e' : '#999';
 
             $code .= '<tr>'
-                . '<td style="padding: 0 8px; text-align: right; color: ' . $lineNumColor . '; font-size: 12px; user-select: none; background: ' . $bgColor . '; border-left: ' . $borderLeft . ';">' . $lineNum . '</td>'
+                . '<td style="padding: 0 8px; text-align: right; color: ' . $lineNumColor . '; font-size: 12px; user-select: none; background: ' . $bgColor . '; border-left: ' . $borderLeft . '; min-width: 32px;">' . $lineNum . '</td>'
                 . '<td style="padding: 0 8px; background: ' . $bgColor . ';"><pre style="margin: 0; font-family: \'SF Mono\', Monaco, Consolas, monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;">' . htmlspecialchars($lineContent) . '</pre></td>'
                 . '</tr>';
         }
