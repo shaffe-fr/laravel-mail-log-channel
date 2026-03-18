@@ -205,7 +205,14 @@ class ContextProcessor implements ProcessorInterface
 
         $queries = $this->queryCollector->getQueries();
 
-        return !empty($queries) ? $queries : null;
+        if (empty($queries)) {
+            return null;
+        }
+
+        return [
+            'items' => $queries,
+            'total' => $this->queryCollector->getTotal(),
+        ];
     }
 
     protected function isRunningAsQueueWorker(): bool

@@ -10,6 +10,8 @@ class QueryCollector
 
     protected int $limit;
 
+    protected int $total = 0;
+
     public function __construct(int $limit = 10)
     {
         $this->limit = $limit;
@@ -17,6 +19,8 @@ class QueryCollector
 
     public function record(QueryExecuted $event): void
     {
+        $this->total++;
+
         $this->queries[] = [
             'sql' => $event->sql,
             'time' => $event->time,
@@ -31,5 +35,10 @@ class QueryCollector
     public function getQueries(): array
     {
         return $this->queries;
+    }
+
+    public function getTotal(): int
+    {
+        return $this->total;
     }
 }

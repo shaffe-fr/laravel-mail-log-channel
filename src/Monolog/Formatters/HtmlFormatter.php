@@ -297,14 +297,20 @@ class HtmlFormatter extends BaseHtmlFormatter
         $extra = $record instanceof LogRecord ? $record->extra : ($record['extra'] ?? []);
         $queries = $extra['sql_queries'] ?? null;
 
-        if (!$queries || empty($queries)) {
+        if (!$queries || empty($queries['items'])) {
             return '';
         }
 
-        $output = $this->sectionTitle('Queries (' . count($queries) . ')');
+        $items = $queries['items'];
+        $total = $queries['total'];
+        $shown = count($items);
+
+        $title = 'Queries (' . ($total - $shown + 1) . '-' . $total . ' of ' . $total . ')';
+
+        $output = $this->sectionTitle($title);
         $output .= '<tr><td style="padding: 5px 15px 10px;"><table cellspacing="0" cellpadding="0" width="100%" style="border: 1px solid #e5e5e5; border-radius: 4px; border-collapse: collapse;">';
 
-        foreach ($queries as $query) {
+        foreach ($items as $query) {
             $time = isset($query['time']) ? number_format($query['time'], 2) . 'ms' : '';
             $sql = $query['sql'] ?? '';
 
