@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 2.6.0 - 2026-03-18
+
+- Add support for Laravel 13
+
 ## 2.5.0 - 2025-02-24
 
 - Add support for Laravel 12
