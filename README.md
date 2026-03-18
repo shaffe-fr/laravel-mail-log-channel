@@ -96,6 +96,9 @@ You can specify multiple channels and individually change the recipients, the su
         // Show all vendor frames in stack trace (collapsed by default)
         // 'collapse_vendor_frames' => true,
 
+        // Disable SQL query collection in error emails
+        // 'log_queries' => false,
+
         // Optionally overwrite the subject format pattern
         // Available placeholders: %level_name%, %message%, %env%, %context%, %app_name%, %channel%, %datetime%
         // 'subject_format' => '[%level_name%] [%env%] %context% — %message%',
@@ -142,9 +145,17 @@ The following `to` config formats are supported:
 
 ## SQL Query Logging
 
-If Laravel's query log is enabled, the error email will automatically include the last 10 SQL queries with their execution time. This is the case when you use tools like [Telescope](https://laravel.com/docs/telescope) or [Debugbar](https://github.com/barryvdh/laravel-debugbar) which enable it for you.
+The last 10 SQL queries (with bindings and execution time) are automatically included in error emails.
 
-The package does not enable the query log itself — it only reads it when available.
+To disable it:
+
+```php
+'mail' => [
+    'driver' => 'mail',
+    'log_queries' => false,
+    // ...
+],
+```
 
 ## Editor Links
 

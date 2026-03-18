@@ -290,8 +290,14 @@ class HtmlFormatter extends BaseHtmlFormatter
 
             $output .= '<tr>'
                 . '<td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">'
-                . '<pre style="margin: 0; font-family: \'SF Mono\', Monaco, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; color: #333;">' . htmlspecialchars($sql) . '</pre>'
-                . '</td>';
+                . '<pre style="margin: 0; font-family: \'SF Mono\', Monaco, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; color: #333;">' . htmlspecialchars($sql) . '</pre>';
+
+            if (!empty($query['bindings'])) {
+                $bindings = array_map(fn ($b) => is_string($b) ? '"' . mb_strimwidth($b, 0, 50, '…') . '"' : var_export($b, true), $query['bindings']);
+                $output .= '<div style="margin-top: 2px; font-size: 11px; color: #999;">[' . htmlspecialchars(implode(', ', $bindings)) . ']</div>';
+            }
+
+            $output .= '</td>';
 
             if ($time) {
                 $output .= '<td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #888; text-align: right; white-space: nowrap;">' . $time . '</td>';

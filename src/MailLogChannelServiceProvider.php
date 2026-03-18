@@ -2,6 +2,7 @@
 
 namespace Shaffe\MailLogChannel;
 
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,6 +15,8 @@ class MailLogChannelServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->singleton(QueryCollector::class);
+
         if ($this->app['log'] instanceof LogManager) {
             $this->app['log']->extend('mail', function ($app, array $config) {
                 $logger = new MailLogger();
@@ -21,5 +24,17 @@ class MailLogChannelServiceProvider extends ServiceProvider
                 return $logger($config);
             });
         }
+    }
+
+    /**
+     * Boot the service provider.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $event) {
+            $this->app->make(QueryCollector::class)->record($event);
+        });
     }
 }

@@ -44,8 +44,14 @@ class MailLogger
 
         $mailHandler->setFormatter(new HtmlFormatter(collapseVendorFrames: $collapseVendorFrames));
 
+        $queryCollector = null;
+
+        if ($this->config('log_queries') ?? true) {
+            $queryCollector = app(QueryCollector::class);
+        }
+
         $logger = new Logger('mailable', [$mailHandler]);
-        $logger->pushProcessor(new ContextProcessor());
+        $logger->pushProcessor(new ContextProcessor($queryCollector));
 
         return $logger;
     }
@@ -130,12 +136,6 @@ class MailLogger
     {
         return config('mail.from.name');
     }
-
-    /**
-     * Get the subject formatter.
-     *
-     * @return \Monolog\Formatter\LineFormatter
-     */
 
     /**
      * Get the value from the passed in config.

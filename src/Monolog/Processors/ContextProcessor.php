@@ -4,9 +4,17 @@ namespace Shaffe\MailLogChannel\Monolog\Processors;
 
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
+use Shaffe\MailLogChannel\QueryCollector;
 
 class ContextProcessor implements ProcessorInterface
 {
+    protected ?QueryCollector $queryCollector;
+
+    public function __construct(?QueryCollector $queryCollector = null)
+    {
+        $this->queryCollector = $queryCollector;
+    }
+
     /**
      * Process a log record and enrich it with execution context.
      *
@@ -190,33 +198,13 @@ class ContextProcessor implements ProcessorInterface
 
     protected function gatherSqlQueries(): ?array
     {
-        try {
-            if (!function_exists('app') || !app()->bound('db')) {
-                return null;
-            }
-
-            $connection = app('db')->connection();
-
-            if (!$connection->logging()) {
-                return null;
-            }
-
-            $queryLog = $connection->getQueryLog();
-            if (empty($queryLog)) {
-                return null;
-            }
-
-            // Keep only the last 10 queries
-            return array_map(function ($query) {
-                return [
-                    'sql' => $query['query'],
-                    'bindings' => $query['bindings'] ?? [],
-                    'time' => $query['time'] ?? null,
-                ];
-            }, array_slice($queryLog, -10));
-        } catch (\Throwable $e) {
+        if (!$this->queryCollector) {
             return null;
         }
+
+        $queries = $this->queryCollector->getQueries();
+
+        return !empty($queries) ? $queries : null;
     }
 
     protected function isRunningAsQueueWorker(): bool
