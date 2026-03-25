@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 3.0.2 - 2026-03-25
+
+- Fix context processor leaking execution data into other log channels when using a stack
+
 ## 3.0.1 - 2026-03-18
 
 - Fix code snippet gutter width for 3-digit line numbers
