@@ -50,8 +50,9 @@ class MailLogger
             $queryCollector = app(QueryCollector::class);
         }
 
+        $mailHandler->pushProcessor(new ContextProcessor($queryCollector));
+
         $logger = new Logger('mailable', [$mailHandler]);
-        $logger->pushProcessor(new ContextProcessor($queryCollector));
 
         return $logger;
     }
