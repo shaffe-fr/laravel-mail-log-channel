@@ -32,6 +32,18 @@ class QueryCollector
         }
     }
 
+    /**
+     * Reset the collector state.
+     *
+     * Useful for long-running processes (queue workers) to prevent
+     * unbounded growth of the total counter between jobs.
+     */
+    public function reset(): void
+    {
+        $this->queries = [];
+        $this->total = 0;
+    }
+
     public function getQueries(): array
     {
         return $this->queries;

@@ -16,7 +16,7 @@ class MailLogChannelServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton(QueryCollector::class);
+        $this->app->scoped(QueryCollector::class);
 
         if ($this->app['log'] instanceof LogManager) {
             $this->app['log']->extend('mail', function ($app, array $config) {
