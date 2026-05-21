@@ -14,9 +14,6 @@ class MailableHandler extends MailHandler
     /** @var \Illuminate\Mail\Mailable */
     protected $mailable;
 
-    /** @var \Illuminate\Contracts\Mail\Mailer */
-    protected $mailer;
-
     /** @var string */
     protected $subjectFormat;
 
@@ -56,7 +53,6 @@ class MailableHandler extends MailHandler
         parent::__construct($level, $bubble);
         $this->mailable = $mailable;
         $this->subjectFormat = $subjectFormat;
-        $this->mailer = app()->make('mailer');
         $this->throttle = $throttle;
         $this->levelRecipients = $levelRecipients;
     }
@@ -96,13 +92,14 @@ class MailableHandler extends MailHandler
     }
 
     /**
-     * Set the subject.
+     * Set the subject on the given mailable.
      *
+     * @param  \Illuminate\Mail\Mailable  $mailable
      * @param  array  $records
      *
      * @return void
      */
-    protected function setSubject(array $records)
+    protected function setSubjectOn(Mailable $mailable, array $records)
     {
         $record = $this->getHighestRecord($records);
         $extra = $record->extra ?? [];
@@ -126,7 +123,15 @@ class MailableHandler extends MailHandler
         // Clean up double spaces from empty placeholders
         $subject = preg_replace('/\s+/', ' ', trim($subject));
 
-        $this->mailable->subject(Str::limit($subject, 252));
+        $mailable->subject(Str::limit($subject, 252));
+    }
+
+    /**
+     * @deprecated Use setSubjectOn() instead. Kept for backward compatibility with test subclasses.
+     */
+    protected function setSubject(array $records)
+    {
+        $this->setSubjectOn($this->mailable, $records);
     }
 
     protected function formatSubjectContext(array $ctx): string
@@ -196,14 +201,17 @@ class MailableHandler extends MailHandler
             }
         }
 
-        $this->mailable->with(
+        // Clone the mailable to prevent state leaking between sends
+        $mailable = clone $this->mailable;
+
+        $mailable->with(
             [
                 'content' => $content,
                 'records' => $records,
             ]
         );
 
-        $this->setSubject($records);
+        $this->setSubjectOn($mailable, $records);
 
         // Apply level-based recipients if configured
         if ($this->levelRecipients !== null) {
@@ -211,12 +219,20 @@ class MailableHandler extends MailHandler
             if (empty($recipients)) {
                 return;
             }
-            // Reset recipients to avoid accumulation across multiple sends
-            $this->mailable->to = [];
-            $this->mailable->to($recipients);
+            $mailable->to($recipients);
         }
 
-        $this->mailer->send($this->mailable);
+        $this->resolveMailer()->send($mailable);
+    }
+
+    /**
+     * Resolve the mailer instance lazily from the container.
+     *
+     * @return \Illuminate\Contracts\Mail\Mailer
+     */
+    protected function resolveMailer(): \Illuminate\Contracts\Mail\Mailer
+    {
+        return app('mailer');
     }
 
     /**
