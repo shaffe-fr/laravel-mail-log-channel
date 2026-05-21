@@ -117,7 +117,7 @@ class ContextProcessor implements ProcessorInterface
             }
 
             $action = $route->getActionName();
-            return $action !== 'Closure' ? $action : 'Closure';
+            return $action !== 'Closure' ? $action : null;
         } catch (\Throwable $e) {
             return null;
         }
