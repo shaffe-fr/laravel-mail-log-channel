@@ -102,7 +102,7 @@ class HtmlFormatter extends BaseHtmlFormatter
                 $output .= $this->keyValueRow('Controller', '<code>' . htmlspecialchars($ctx['controller']) . '</code>');
             }
             if (!empty($ctx['ip'])) {
-                $output .= $this->keyValueRow('IP', htmlspecialchars($ctx['ip']));
+                $output .= $this->keyValueRow('IP', '<a href="https://whatismyipaddress.com/ip/' . htmlspecialchars($ctx['ip']) . '" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; text-decoration-color: #ccc;">' . htmlspecialchars($ctx['ip']) . '</a>');
             }
             if (!empty($ctx['user'])) {
                 $userStr = '#' . $ctx['user']['id'];
