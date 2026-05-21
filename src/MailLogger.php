@@ -9,6 +9,7 @@ use Shaffe\MailLogChannel\Mail\Log as MailableLog;
 use Shaffe\MailLogChannel\Monolog\Formatters\HtmlFormatter;
 use Shaffe\MailLogChannel\Monolog\Handlers\MailableHandler;
 use Shaffe\MailLogChannel\Monolog\Processors\ContextProcessor;
+use Shaffe\MailLogChannel\Throttle\ThrottleState;
 
 class MailLogger
 {
@@ -37,7 +38,8 @@ class MailLogger
             $this->buildMailable(),
             $this->config('subject_format') ?? '[%level_name%] [%env%] %context% — %message%',
             $this->config('level'),
-            $this->config('bubble')
+            $this->config('bubble'),
+            $this->buildThrottle()
         );
 
         $collapseVendorFrames = $this->config('collapse_vendor_frames') ?? true;
@@ -136,6 +138,30 @@ class MailLogger
     protected function defaultFromName(): ?string
     {
         return config('mail.from.name');
+    }
+
+    /**
+     * Build the throttle instance if configured.
+     */
+    protected function buildThrottle(): ?ThrottleState
+    {
+        $ttl = $this->config('throttle');
+
+        // Default: enabled with 60 seconds TTL
+        if ($ttl === null) {
+            $ttl = 60;
+        }
+
+        // Explicitly disabled
+        if ($ttl === 0 || $ttl === false) {
+            return null;
+        }
+
+        $cache = app('cache')->store(
+            $this->config('throttle_cache_store')
+        );
+
+        return new ThrottleState($cache, (int) $ttl);
     }
 
     /**

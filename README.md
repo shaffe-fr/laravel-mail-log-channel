@@ -21,6 +21,7 @@ Receive detailed error emails from your Laravel application. Plug it into Larave
 - **Code snippet** — source code around the error line, highlighted
 - **Smart stack trace** — application frames expanded, vendor frames collapsed
 - **SQL queries** — last 10 queries with bindings and execution time
+- **Throttling** — identical errors are deduplicated to avoid inbox flooding
 - **Editor links** — clickable file paths that open in your IDE
 - **Previous exceptions** — full chain display
 - **Additional context** — from `Exception::context()` and log record context
@@ -90,7 +91,11 @@ All options with their defaults:
     // Placeholders: %level_name%, %message%, %env%, %context%, %app_name%, %channel%, %datetime%
     'subject_format' => '[%level_name%] [%env%] %context% — %message%',
 
+    // Throttle identical errors (seconds). Set to 0 or false to disable.
+    'throttle' => 60,
 
+    // Cache store for throttle state (null = default store)
+    'throttle_cache_store' => null,
 
     // Include last N SQL queries in the email
     'log_queries' => true,
@@ -124,7 +129,28 @@ The `to` option accepts several formats:
 ],
 ```
 
+## Throttling
 
+Identical errors are automatically deduplicated to prevent inbox flooding. When the same error occurs multiple times within the throttle window, only the first occurrence sends an email.
+
+**Enabled by default** with a 60-second window.
+
+### Fingerprinting
+
+Each log record gets a fingerprint to determine uniqueness:
+
+| Record type | Fingerprint components |
+|:------------|:-----------------------|
+| Exception   | class + code + message + file + line |
+| Plain message | channel + level + message |
+
+### Suppressed Occurrences Counter
+
+When an error is throttled and then reappears after the window expires, the next email includes a notice indicating how many times the error has occurred since it first appeared, along with the timestamp of the first occurrence.
+
+For example: *"⚠️ This error has occurred 47 times since 15 Mar 2025 14:30:00 UTC."*
+
+This gives you immediate visibility into the scale of a recurring issue without flooding your inbox.
 
 ### Configuration
 

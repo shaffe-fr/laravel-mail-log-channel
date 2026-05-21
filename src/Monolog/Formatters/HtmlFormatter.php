@@ -27,6 +27,7 @@ class HtmlFormatter extends BaseHtmlFormatter
     public function format(LogRecord|array $record): string
     {
         $output = $this->buildHeader($record);
+        $output .= $this->buildThrottleNotice($record);
         $output .= $this->buildExecutionContextSection($record);
         $output .= $this->buildEnvironmentSection($record);
         $output .= $this->buildExceptionSection($record);
@@ -53,6 +54,29 @@ class HtmlFormatter extends BaseHtmlFormatter
             . htmlspecialchars($message) . '</td></tr>'
             . '<tr><td style="padding: 8px 15px; color: #888; font-size: 12px; border-bottom: 1px solid #e5e5e5;">'
             . $datetime->format('d M Y H:i:s T') . '</td></tr>';
+    }
+
+    protected function buildThrottleNotice($record): string
+    {
+        $extra = $record instanceof LogRecord ? $record->extra : ($record['extra'] ?? []);
+        $count = $extra['throttle_occurrence_count'] ?? 0;
+
+        if ($count <= 1) {
+            return '';
+        }
+
+        $firstSeenAt = $extra['throttle_first_seen_at'] ?? null;
+
+        if ($firstSeenAt !== null) {
+            $date = (new \DateTimeImmutable('@' . $firstSeenAt))->format('d M Y H:i:s T');
+            $label = 'This error has occurred ' . $count . ' times since ' . $date . '.';
+        } else {
+            $label = 'This error has occurred ' . $count . ' times.';
+        }
+
+        return '<tr><td style="padding: 8px 15px; background: #fef3cd; color: #856404; font-size: 13px; border-bottom: 1px solid #e5e5e5;">'
+            . '⚠️ ' . htmlspecialchars($label)
+            . '</td></tr>';
     }
 
     protected function buildExecutionContextSection($record): string
