@@ -4,6 +4,7 @@ namespace Shaffe\MailLogChannel;
 
 use Illuminate\Contracts\Mail\Mailable;
 use InvalidArgumentException;
+use Monolog\Level;
 use Monolog\Logger;
 use Shaffe\MailLogChannel\Mail\Log as MailableLog;
 use Shaffe\MailLogChannel\Monolog\Formatters\HtmlFormatter;
@@ -39,7 +40,8 @@ class MailLogger
             $this->config('subject_format') ?? '[%level_name%] [%env%] %context% — %message%',
             $this->config('level'),
             $this->config('bubble'),
-            $this->buildThrottle()
+            $this->buildThrottle(),
+            $this->buildLevelRecipients()
         );
 
         $collapseVendorFrames = $this->config('collapse_vendor_frames') ?? true;
@@ -70,11 +72,29 @@ class MailLogger
         /** @var \Illuminate\Contracts\Mail\Mailable $mailable */
         $mailable = new $mailableClass();
 
-        if (! ($recipients = $this->buildRecipients())) {
-            throw new InvalidArgumentException('"To" address is required. Please check the `to` driver\'s logging config.');
+        // When using level-based routing, recipients are set dynamically at send time.
+        // We still need at least a default or level-specific recipient configured.
+        if ($this->isLevelBasedRouting()) {
+            $levelRecipients = $this->buildLevelRecipients();
+            // Ensure at least one level has actual recipients
+            $hasAnyRecipient = false;
+            if ($levelRecipients) {
+                foreach ($levelRecipients as $recipients) {
+                    if (!empty($recipients)) {
+                        $hasAnyRecipient = true;
+                        break;
+                    }
+                }
+            }
+            if (!$hasAnyRecipient) {
+                throw new InvalidArgumentException('"To" address is required. Please check the `to` driver\'s logging config.');
+            }
+        } else {
+            if (! ($recipients = $this->buildRecipients())) {
+                throw new InvalidArgumentException('"To" address is required. Please check the `to` driver\'s logging config.');
+            }
+            $mailable->to($recipients);
         }
-
-        $mailable->to($recipients);
 
         if (! $this->defaultFromAddress() && ! isset($this->config('from')['address'])) {
             throw new InvalidArgumentException('"From" address is required. Please check the `from.address` driver\'s config and the `mail.from.address` config.');
@@ -162,6 +182,121 @@ class MailLogger
         );
 
         return new ThrottleState($cache, (int) $ttl);
+    }
+
+    /**
+     * Determine if the `to` config uses level-based routing.
+     *
+     * Level-based routing is detected when `to` is an associative array
+     * where at least one key matches a Monolog level name, a Monolog Level enum,
+     * a numeric level value, or 'default'.
+     */
+    protected function isLevelBasedRouting(): bool
+    {
+        $to = $this->config('to');
+
+        if (!is_array($to)) {
+            return false;
+        }
+
+        foreach (array_keys($to) as $key) {
+            if ($this->normalizeLevelKey($key) !== null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Build the level-based recipients map.
+     *
+     * Returns null if not using level-based routing.
+     * Returns an array mapping level names to recipient arrays.
+     * A level explicitly set to null or '' will map to an empty array,
+     * which suppresses email sending for that level (overrides 'default').
+     *
+     * Keys can be:
+     * - String level names: 'error', 'critical', 'default'
+     * - Monolog Level enum values: Level::Error, Level::Critical
+     * - Numeric level values: 400, 500
+     *
+     * @return array<string, array>|null
+     */
+    protected function buildLevelRecipients(): ?array
+    {
+        if (!$this->isLevelBasedRouting()) {
+            return null;
+        }
+
+        $to = $this->config('to');
+        $result = [];
+
+        foreach ($to as $key => $value) {
+            $normalizedKey = $this->normalizeLevelKey($key);
+
+            if ($normalizedKey === null) {
+                continue;
+            }
+
+            // Explicitly disabled level: null or empty string means "don't send"
+            if ($value === null || $value === '' || $value === false) {
+                $result[$normalizedKey] = [];
+                continue;
+            }
+
+            $recipients = [];
+            foreach ((array) $value as $emailOrIndex => $nameOrEmail) {
+                if (is_array($nameOrEmail)) {
+                    $email = $nameOrEmail['email'] ?? $nameOrEmail['address'] ?? null;
+                    if ($email) {
+                        $recipients[] = ['email' => $email, 'name' => $nameOrEmail['name'] ?? null];
+                    }
+                } elseif (is_string($emailOrIndex)) {
+                    $recipients[] = ['email' => $emailOrIndex, 'name' => $nameOrEmail];
+                } elseif (is_string($nameOrEmail)) {
+                    $recipients[] = ['email' => $nameOrEmail, 'name' => null];
+                }
+            }
+
+            $result[$normalizedKey] = $recipients;
+        }
+
+        return !empty($result) ? $result : null;
+    }
+
+    /**
+     * Normalize a level key to a lowercase level name string.
+     *
+     * Accepts:
+     * - 'default' → 'default'
+     * - String level names: 'error', 'Error', 'ERROR' → 'error'
+     * - Monolog Level enum: Level::Error → 'error'
+     * - Numeric level values: 400 → 'error'
+     *
+     * Returns null if the key is not a recognized level.
+     */
+    protected function normalizeLevelKey(mixed $key): ?string
+    {
+        if ($key instanceof Level) {
+            return strtolower($key->getName());
+        }
+
+        if (is_int($key)) {
+            $level = Level::tryFrom($key);
+            return $level ? strtolower($level->getName()) : null;
+        }
+
+        if (is_string($key)) {
+            $lower = strtolower($key);
+            $levelNames = ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'default'];
+
+            if (in_array($lower, $levelNames, true)) {
+                return $lower;
+            }
+        }
+
+        return null;
     }
 
     /**

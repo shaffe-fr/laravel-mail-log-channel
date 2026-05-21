@@ -24,6 +24,16 @@ class MailableHandler extends MailHandler
     protected $throttle;
 
     /**
+     * Level-based recipient routing configuration.
+     *
+     * When null, the mailable's original recipients are used (legacy behavior).
+     * When set, it maps level names to recipient arrays, with an optional 'default' key.
+     *
+     * @var array<string, array>|null
+     */
+    protected ?array $levelRecipients = null;
+
+    /**
      * Create the mailable handler.
      *
      * @param  \Illuminate\Mail\Mailable  $mailable
@@ -31,6 +41,7 @@ class MailableHandler extends MailHandler
      * @param  int|string|\Monolog\Level  $level  The minimum logging level at which this handler will be triggered
      * @param  bool  $bubble  Whether the messages that are handled can bubble up the stack or not
      * @param  \Shaffe\MailLogChannel\Throttle\ThrottleState|null  $throttle
+     * @param  array<string, array>|null  $levelRecipients
      *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
@@ -39,13 +50,15 @@ class MailableHandler extends MailHandler
         string $subjectFormat = '[%level_name%] [%env%] %context% — %message%',
         $level = Logger::DEBUG,
         bool $bubble = true,
-        ?ThrottleState $throttle = null
+        ?ThrottleState $throttle = null,
+        ?array $levelRecipients = null
     ) {
         parent::__construct($level, $bubble);
         $this->mailable = $mailable;
         $this->subjectFormat = $subjectFormat;
         $this->mailer = app()->make('mailer');
         $this->throttle = $throttle;
+        $this->levelRecipients = $levelRecipients;
     }
 
     /**
@@ -53,6 +66,28 @@ class MailableHandler extends MailHandler
      */
     protected function write(LogRecord $record): void
     {
+        // If level-based routing is active, check if this level has recipients
+        if ($this->levelRecipients !== null) {
+            $levelName = strtolower($record->level->getName());
+
+            // Level explicitly set to empty (null/'') — suppress email
+            if (array_key_exists($levelName, $this->levelRecipients) && empty($this->levelRecipients[$levelName])) {
+                return;
+            }
+
+            // No explicit config for this level and no default — skip
+            if (!array_key_exists($levelName, $this->levelRecipients) && !array_key_exists('default', $this->levelRecipients)) {
+                return;
+            }
+
+            // Default is explicitly empty — suppress
+            if (!array_key_exists($levelName, $this->levelRecipients)
+                && array_key_exists('default', $this->levelRecipients)
+                && empty($this->levelRecipients['default'])) {
+                return;
+            }
+        }
+
         if ($this->throttle && $this->throttle->isThrottled($record)) {
             return;
         }
@@ -170,6 +205,33 @@ class MailableHandler extends MailHandler
 
         $this->setSubject($records);
 
+        // Apply level-based recipients if configured
+        if ($this->levelRecipients !== null) {
+            $recipients = $this->resolveRecipientsForRecords($records);
+            if (empty($recipients)) {
+                return;
+            }
+            // Reset recipients to avoid accumulation across multiple sends
+            $this->mailable->to = [];
+            $this->mailable->to($recipients);
+        }
+
         $this->mailer->send($this->mailable);
+    }
+
+    /**
+     * Resolve recipients based on the highest log level in the records.
+     *
+     * @param  array  $records
+     * @return array
+     */
+    protected function resolveRecipientsForRecords(array $records): array
+    {
+        $record = $this->getHighestRecord($records);
+        $levelName = strtolower($record->level->getName());
+
+        return $this->levelRecipients[$levelName]
+            ?? $this->levelRecipients['default']
+            ?? [];
     }
 }

@@ -22,6 +22,7 @@ Receive detailed error emails from your Laravel application. Plug it into Larave
 - **Smart stack trace** — application frames expanded, vendor frames collapsed
 - **SQL queries** — last 10 queries with bindings and execution time
 - **Throttling** — identical errors are deduplicated to avoid inbox flooding
+- **Level-based routing** — send to different recipients based on log level, suppress specific levels
 - **Editor links** — clickable file paths that open in your IDE
 - **Previous exceptions** — full chain display
 - **Additional context** — from `Exception::context()` and log record context
@@ -129,6 +130,46 @@ The `to` option accepts several formats:
     ['address' => 'ops@example.com', 'name' => 'Ops'],
 ],
 ```
+
+### Level-Based Routing
+
+Route error emails to different recipients based on log level. Levels without a configured recipient (and no `default`) won't send any email.
+
+```php
+'to' => [
+    'default' => 'dev@example.com',       // fallback for levels not listed
+    'critical' => 'oncall@example.com',   // critical & emergency → on-call
+    'emergency' => [
+        ['address' => 'oncall@example.com', 'name' => 'On-Call'],
+        ['address' => 'cto@example.com', 'name' => 'CTO'],
+    ],
+    'debug' => null,                       // explicitly suppress debug emails
+    'info' => '',                          // same — no email for info
+],
+```
+
+Level keys also accept Monolog `Level` enum values or their numeric equivalents:
+
+```php
+use Monolog\Level;
+
+'to' => [
+    'default' => 'dev@example.com',
+    Level::Critical->value => 'oncall@example.com',  // 500
+    'warning' => 'dev@example.com',                  // string works too
+    Level::Debug->value => null,                     // 100 — suppressed
+],
+```
+
+**Rules:**
+
+- If a level has recipients → email is sent to those recipients.
+- If a level is not listed → falls back to `default`.
+- If a level is explicitly set to `null`, `''`, or `false` → no email is sent, even if `default` exists.
+- If a level is not listed and there is no `default` → no email is sent.
+- This is fully backward-compatible: a plain string or simple array `to` works exactly as before.
+
+Each level value accepts the same formats as the standard `to` option (string, array of strings, named array, structured array).
 
 ## Throttling
 
