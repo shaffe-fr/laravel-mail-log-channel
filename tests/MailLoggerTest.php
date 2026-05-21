@@ -4,14 +4,14 @@ namespace Shaffe\MailLogChannel\Tests;
 
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
-use Illuminate\Container\Container;
 use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Container\Container;
 use InvalidArgumentException;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Shaffe\MailLogChannel\MailLogger;
-use Shaffe\MailLogChannel\Monolog\Handlers\MailableHandler;
 use Shaffe\MailLogChannel\Monolog\Formatters\HtmlFormatter;
+use Shaffe\MailLogChannel\Monolog\Handlers\MailableHandler;
 
 class MailLoggerTest extends TestCase
 {

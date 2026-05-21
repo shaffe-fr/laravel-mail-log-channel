@@ -158,7 +158,9 @@ class MailableHandlerTest extends TestCase
 class SubjectTestableHandler extends MailableHandler
 {
     public ?string $lastSubject = null;
+
     public array $sentPayloads = [];
+
     protected string $testSubjectFormat = '[%level_name%] [%env%] %context% — %message%';
 
     public function __construct(Level $level = Level::Debug)

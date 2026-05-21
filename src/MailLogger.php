@@ -20,7 +20,6 @@ class MailLogger
     /**
      * Create a custom Monolog instance.
      *
-     * @param  array  $config
      *
      * @return \Monolog\Logger
      */
@@ -63,8 +62,6 @@ class MailLogger
 
     /**
      * Create the mailable log.
-     *
-     * @return \Illuminate\Mail\Mailable
      */
     protected function buildMailable(): \Illuminate\Mail\Mailable
     {
@@ -80,13 +77,13 @@ class MailLogger
             $hasAnyRecipient = false;
             if ($levelRecipients) {
                 foreach ($levelRecipients as $recipients) {
-                    if (!empty($recipients)) {
+                    if (! empty($recipients)) {
                         $hasAnyRecipient = true;
                         break;
                     }
                 }
             }
-            if (!$hasAnyRecipient) {
+            if (! $hasAnyRecipient) {
                 throw new InvalidArgumentException('"To" address is required. Please check the `to` driver\'s logging config.');
             }
         } else {
@@ -119,8 +116,6 @@ class MailLogger
 
     /**
      * Get the default from address.
-     *
-     * @return string|null
      */
     protected function defaultFromAddress(): ?string
     {
@@ -129,8 +124,6 @@ class MailLogger
 
     /**
      * Get the default from name.
-     *
-     * @return string|null
      */
     protected function defaultFromName(): ?string
     {
@@ -145,7 +138,6 @@ class MailLogger
      * - Named format: ['admin@example.com' => 'Admin']
      * - Structured format: [['email' => '...', 'name' => '...'] or ['address' => '...', 'name' => '...']]
      *
-     * @param  array  $items
      * @return array<int, array{email: string, name: string|null}>
      */
     protected function parseRecipients(array $items): array
@@ -212,7 +204,7 @@ class MailLogger
     {
         $to = $this->config('to');
 
-        if (!is_array($to)) {
+        if (! is_array($to)) {
             return false;
         }
 
@@ -242,7 +234,7 @@ class MailLogger
      */
     protected function buildLevelRecipients(): ?array
     {
-        if (!$this->isLevelBasedRouting()) {
+        if (! $this->isLevelBasedRouting()) {
             return null;
         }
 
@@ -259,13 +251,14 @@ class MailLogger
             // Explicitly disabled level: null or empty string means "don't send"
             if ($value === null || $value === '' || $value === false) {
                 $result[$normalizedKey] = [];
+
                 continue;
             }
 
             $result[$normalizedKey] = $this->parseRecipients((array) $value);
         }
 
-        return !empty($result) ? $result : null;
+        return ! empty($result) ? $result : null;
     }
 
     /**
@@ -287,6 +280,7 @@ class MailLogger
 
         if (is_int($key)) {
             $level = Level::tryFrom($key);
+
             return $level ? strtolower($level->getName()) : null;
         }
 
@@ -305,7 +299,6 @@ class MailLogger
     /**
      * Get the value from the passed in config.
      *
-     * @param  string  $field
      *
      * @return mixed
      */

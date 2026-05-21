@@ -2,8 +2,8 @@
 
 namespace Shaffe\MailLogChannel\Tests;
 
-use Illuminate\Container\Container;
 use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Container\Container;
 use Monolog\Level;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
@@ -76,7 +76,7 @@ class EnvironmentInfoTest extends TestCase
 
     public function test_environment_includes_execution_time_when_laravel_start_defined(): void
     {
-        if (!defined('LARAVEL_START')) {
+        if (! defined('LARAVEL_START')) {
             define('LARAVEL_START', microtime(true) - 0.5); // simulate 500ms ago
         }
 

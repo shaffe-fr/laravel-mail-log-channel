@@ -3,10 +3,10 @@
 namespace Shaffe\MailLogChannel\Monolog\Handlers;
 
 use Illuminate\Mail\Mailable;
-use Monolog\Handler\MailHandler;
-use Monolog\LogRecord;
-use Monolog\Logger;
 use Illuminate\Support\Str;
+use Monolog\Handler\MailHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use Shaffe\MailLogChannel\Throttle\ThrottleState;
 
 class MailableHandler extends MailHandler
@@ -33,11 +33,8 @@ class MailableHandler extends MailHandler
     /**
      * Create the mailable handler.
      *
-     * @param  \Illuminate\Mail\Mailable  $mailable
-     * @param  string  $subjectFormat
      * @param  int|string|\Monolog\Level  $level  The minimum logging level at which this handler will be triggered
      * @param  bool  $bubble  Whether the messages that are handled can bubble up the stack or not
-     * @param  \Shaffe\MailLogChannel\Throttle\ThrottleState|null  $throttle
      * @param  array<string, array>|null  $levelRecipients
      *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
@@ -72,12 +69,12 @@ class MailableHandler extends MailHandler
             }
 
             // No explicit config for this level and no default — skip
-            if (!array_key_exists($levelName, $this->levelRecipients) && !array_key_exists('default', $this->levelRecipients)) {
+            if (! array_key_exists($levelName, $this->levelRecipients) && ! array_key_exists('default', $this->levelRecipients)) {
                 return;
             }
 
             // Default is explicitly empty — suppress
-            if (!array_key_exists($levelName, $this->levelRecipients)
+            if (! array_key_exists($levelName, $this->levelRecipients)
                 && array_key_exists('default', $this->levelRecipients)
                 && empty($this->levelRecipients['default'])) {
                 return;
@@ -94,16 +91,13 @@ class MailableHandler extends MailHandler
     /**
      * Set the subject on the given mailable.
      *
-     * @param  \Illuminate\Mail\Mailable  $mailable
-     * @param  array  $records
      *
      * @return void
      */
     protected function setSubjectOn(Mailable $mailable, array $records)
     {
         $record = $this->getHighestRecord($records);
-        $extra = $record->extra ?? [];
-
+        $extra = $record->extra ?? []; /** @phpstan-ignore nullCoalesce.property */
         $replacements = [
             '%level_name%' => $record->level->getName(),
             '%message%' => $record->message,
@@ -142,7 +136,8 @@ class MailableHandler extends MailHandler
             $method = $ctx['method'] ?? '';
             $url = $ctx['url'] ?? '';
             $path = parse_url($url, PHP_URL_PATH) ?: '/';
-            return $method ? $method . ' ' . $path : '';
+
+            return $method ? $method.' '.$path : '';
         }
 
         if ($type === 'console') {
@@ -150,12 +145,14 @@ class MailableHandler extends MailHandler
             if ($command) {
                 return preg_replace('/^(php\s+)?artisan\s+/', '', $command);
             }
+
             return '';
         }
 
         if ($type === 'queue') {
             $queue = $ctx['queue'] ?? 'default';
-            return 'queue:' . $queue;
+
+            return 'queue:'.$queue;
         }
 
         return '';
@@ -176,7 +173,7 @@ class MailableHandler extends MailHandler
     protected function send(string $content, array $records): void
     {
         // Inject occurrence count and first seen timestamp if throttle is active
-        if ($this->throttle && !empty($records)) {
+        if ($this->throttle && ! empty($records)) { /** @phpstan-ignore empty.variable */
             $highestRecord = $this->getHighestRecord($records);
             $occurrenceCount = $this->throttle->getOccurrenceCount($highestRecord);
 
@@ -191,8 +188,10 @@ class MailableHandler extends MailHandler
                         if ($firstSeenAt !== null) {
                             $extra['throttle_first_seen_at'] = $firstSeenAt;
                         }
+
                         return $record->with(extra: $extra);
                     }
+
                     return $record;
                 }, $records);
 
@@ -227,8 +226,6 @@ class MailableHandler extends MailHandler
 
     /**
      * Resolve the mailer instance lazily from the container.
-     *
-     * @return \Illuminate\Contracts\Mail\Mailer
      */
     protected function resolveMailer(): \Illuminate\Contracts\Mail\Mailer
     {
@@ -237,9 +234,6 @@ class MailableHandler extends MailHandler
 
     /**
      * Resolve recipients based on the highest log level in the records.
-     *
-     * @param  array  $records
-     * @return array
      */
     protected function resolveRecipientsForRecords(array $records): array
     {

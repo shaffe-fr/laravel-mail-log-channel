@@ -1,0 +1,14 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "trailing_comma_in_multiline": true,
+        "fully_qualified_strict_types": false,
+        "new_with_parentheses": true,
+        "php_unit_method_casing": {
+            "case": "snake_case"
+        }
+    },
+    "exclude": [
+        "vendor"
+    ]
+}

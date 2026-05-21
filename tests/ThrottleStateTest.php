@@ -105,8 +105,10 @@ class ThrottleStateTest extends TestCase
     {
         $throttle = new ThrottleState($this->cache, ttl: 60);
 
-        $exception1 = new \RuntimeException('Error'); $line1 = __LINE__;
-        $exception2 = new \RuntimeException('Error'); $line2 = __LINE__;
+        $exception1 = new \RuntimeException('Error');
+        $line1 = __LINE__;
+        $exception2 = new \RuntimeException('Error');
+        $line2 = __LINE__;
 
         $this->assertNotEquals($line1, $line2);
 
@@ -164,7 +166,7 @@ class ThrottleStateTest extends TestCase
 
         // Simulate TTL expiry on the lock
         $fingerprint = $throttle->fingerprint($record);
-        $this->cache->forget('mail_log_throttle:' . $fingerprint);
+        $this->cache->forget('mail_log_throttle:'.$fingerprint);
 
         // Second window: count continues
         $throttle->isThrottled($record);
@@ -220,7 +222,7 @@ class ThrottleStateTest extends TestCase
 
         // Simulate TTL expiry
         $fingerprint = $throttle->fingerprint($record);
-        $this->cache->forget('mail_log_throttle:' . $fingerprint);
+        $this->cache->forget('mail_log_throttle:'.$fingerprint);
 
         $this->assertFalse($throttle->isThrottled($record));
     }

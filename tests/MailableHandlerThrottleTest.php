@@ -82,7 +82,7 @@ class MailableHandlerThrottleTest extends TestCase
 
         // Simulate TTL expiry by removing the lock
         $fingerprint = $throttle->fingerprint($record);
-        $this->cache->forget('mail_log_throttle:' . $fingerprint);
+        $this->cache->forget('mail_log_throttle:'.$fingerprint);
 
         // Next call: not throttled anymore, sends with count = 5
         $handler->handle($record);
@@ -131,7 +131,7 @@ class TestableMailableHandler extends MailableHandler
     protected function send(string $content, array $records): void
     {
         // Replicate the occurrence count injection from the real send()
-        if ($this->throttle && !empty($records)) {
+        if ($this->throttle && ! empty($records)) {
             $highestRecord = $this->getHighestRecord($records);
             $occurrenceCount = $this->throttle->getOccurrenceCount($highestRecord);
 
@@ -146,8 +146,10 @@ class TestableMailableHandler extends MailableHandler
                         if ($firstSeenAt !== null) {
                             $extra['throttle_first_seen_at'] = $firstSeenAt;
                         }
+
                         return $record->with(extra: $extra);
                     }
+
                     return $record;
                 }, $records);
             }

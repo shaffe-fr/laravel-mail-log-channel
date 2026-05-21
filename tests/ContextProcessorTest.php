@@ -2,8 +2,8 @@
 
 namespace Shaffe\MailLogChannel\Tests;
 
-use Illuminate\Container\Container;
 use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Container\Container;
 use Monolog\Level;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;

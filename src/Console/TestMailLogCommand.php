@@ -20,8 +20,9 @@ class TestMailLogCommand extends Command
 
         $validLevels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
 
-        if (!in_array($level, $validLevels, true)) {
-            $this->error("Invalid log level: {$level}. Valid levels: " . implode(', ', $validLevels));
+        if (! in_array($level, $validLevels, true)) {
+            $this->error("Invalid log level: {$level}. Valid levels: ".implode(', ', $validLevels));
+
             return self::FAILURE;
         }
 
@@ -36,6 +37,7 @@ class TestMailLogCommand extends Command
             ]);
         } catch (\Throwable $e) {
             $this->error("Failed to send test email: {$e->getMessage()}");
+
             return self::FAILURE;
         }
 

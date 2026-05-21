@@ -18,6 +18,7 @@ class Log extends Mailable
      */
     public function build()
     {
+        /** @phpstan-ignore argument.type */
         return $this->markdown('mail::message', ['slot' => new HtmlString($this->viewData['content'] ?? '')]);
     }
 }

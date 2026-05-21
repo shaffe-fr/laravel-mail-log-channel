@@ -4,14 +4,13 @@ namespace Shaffe\MailLogChannel\Tests;
 
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
-use Illuminate\Container\Container;
 use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Container\Container;
 use Illuminate\Mail\Mailable;
 use Monolog\Level;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Shaffe\MailLogChannel\MailLogger;
-use Shaffe\MailLogChannel\Monolog\Handlers\MailableHandler;
 
 /**
  * Integration tests verifying that all recipient formats work end-to-end
@@ -90,6 +89,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
     {
         $this->mailer->shouldReceive('send')->once()->with(\Mockery::on(function (Mailable $mailable) {
             $to = $mailable->to;
+
             return count($to) === 1 && $to[0]['address'] === 'dev@example.com';
         }));
 
@@ -109,6 +109,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
     {
         $this->mailer->shouldReceive('send')->once()->with(\Mockery::on(function (Mailable $mailable) {
             $to = $mailable->to;
+
             return count($to) === 2
                 && $to[0]['address'] === 'dev@example.com'
                 && $to[1]['address'] === 'ops@example.com';
@@ -130,6 +131,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
     {
         $this->mailer->shouldReceive('send')->once()->with(\Mockery::on(function (Mailable $mailable) {
             $to = $mailable->to;
+
             return count($to) === 1
                 && $to[0]['address'] === 'oncall@example.com'
                 && $to[0]['name'] === 'On-Call Team';
@@ -151,6 +153,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
     {
         $this->mailer->shouldReceive('send')->once()->with(\Mockery::on(function (Mailable $mailable) {
             $to = $mailable->to;
+
             return count($to) === 2
                 && $to[0]['address'] === 'oncall@example.com'
                 && $to[0]['name'] === 'On-Call'
@@ -179,6 +182,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
 
         $this->mailer->shouldReceive('send')->twice()->with(\Mockery::on(function (Mailable $mailable) use (&$sentTo) {
             $sentTo[] = array_column($mailable->to, 'address');
+
             return true;
         }));
 
@@ -222,6 +226,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
     {
         $this->mailer->shouldReceive('send')->once()->with(\Mockery::on(function (Mailable $mailable) {
             $to = $mailable->to;
+
             return count($to) === 1 && $to[0]['address'] === 'oncall@example.com';
         }));
 
@@ -244,6 +249,7 @@ class LevelBasedRecipientFormatsTest extends TestCase
 
         $this->mailer->shouldReceive('send')->times(3)->with(\Mockery::on(function (Mailable $mailable) use (&$sentRecipients) {
             $sentRecipients[] = $mailable->to;
+
             return true;
         }));
 

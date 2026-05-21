@@ -122,8 +122,12 @@ class MailLogChannelIntegrationTest extends TestCase
         $collector = $this->app->make(QueryCollector::class);
 
         // Simulate a QueryExecuted event
-        $connection = new class {
-            public function getName() { return 'testing'; }
+        $connection = new class()
+        {
+            public function getName()
+            {
+                return 'testing';
+            }
         };
 
         event(new QueryExecuted(

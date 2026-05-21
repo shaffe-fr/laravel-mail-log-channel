@@ -26,12 +26,12 @@ class ThrottleState
     public function isThrottled(LogRecord $record): bool
     {
         $fingerprint = $this->fingerprint($record);
-        $lockKey = $this->cachePrefix . $fingerprint;
-        $countKey = $this->cachePrefix . 'count:' . $fingerprint;
-        $firstSeenKey = $this->cachePrefix . 'first:' . $fingerprint;
+        $lockKey = $this->cachePrefix.$fingerprint;
+        $countKey = $this->cachePrefix.'count:'.$fingerprint;
+        $firstSeenKey = $this->cachePrefix.'first:'.$fingerprint;
 
         // Record the first occurrence timestamp (only set once, sliding TTL)
-        if (!$this->cache->has($firstSeenKey)) {
+        if (! $this->cache->has($firstSeenKey)) {
             $this->cache->put($firstSeenKey, time(), $this->ttl * 2);
         } else {
             // Extend TTL as long as the error keeps happening
@@ -40,7 +40,7 @@ class ThrottleState
 
         // Increment the total occurrence counter (sliding TTL)
         // Initialize the key if it doesn't exist (some drivers don't support increment on missing keys)
-        if (!$this->cache->has($countKey)) {
+        if (! $this->cache->has($countKey)) {
             $this->cache->put($countKey, 1, $this->ttl * 2);
         } else {
             $newCount = $this->cache->increment($countKey);
@@ -63,7 +63,7 @@ class ThrottleState
     public function getOccurrenceCount(LogRecord $record): int
     {
         $fingerprint = $this->fingerprint($record);
-        $countKey = $this->cachePrefix . 'count:' . $fingerprint;
+        $countKey = $this->cachePrefix.'count:'.$fingerprint;
 
         return (int) $this->cache->get($countKey, 1);
     }
@@ -74,7 +74,7 @@ class ThrottleState
     public function getFirstSeenAt(LogRecord $record): ?int
     {
         $fingerprint = $this->fingerprint($record);
-        $firstSeenKey = $this->cachePrefix . 'first:' . $fingerprint;
+        $firstSeenKey = $this->cachePrefix.'first:'.$fingerprint;
 
         $timestamp = $this->cache->get($firstSeenKey);
 
@@ -92,18 +92,18 @@ class ThrottleState
         if ($exception instanceof \Throwable) {
             return md5(
                 get_class($exception)
-                . $exception->getCode()
-                . $exception->getMessage()
-                . $exception->getFile()
-                . $exception->getLine()
+                .$exception->getCode()
+                .$exception->getMessage()
+                .$exception->getFile()
+                .$exception->getLine()
             );
         }
 
         // Fallback for non-exception log records: use channel + level + message
         return md5(
             $record->channel
-            . $record->level->value
-            . $record->message
+            .$record->level->value
+            .$record->message
         );
     }
 }

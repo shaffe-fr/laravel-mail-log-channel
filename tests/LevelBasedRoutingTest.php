@@ -4,8 +4,8 @@ namespace Shaffe\MailLogChannel\Tests;
 
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
-use Illuminate\Container\Container;
 use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Container\Container;
 use InvalidArgumentException;
 use Monolog\Level;
 use Monolog\LogRecord;

@@ -17,9 +17,6 @@ class ContextProcessor implements ProcessorInterface
 
     /**
      * Process a log record and enrich it with execution context.
-     *
-     * @param  \Monolog\LogRecord|array  $record
-     * @return \Monolog\LogRecord|array
      */
     public function __invoke(LogRecord|array $record): LogRecord|array
     {
@@ -36,12 +33,13 @@ class ContextProcessor implements ProcessorInterface
         }
 
         $record['extra'] = $extra;
+
         return $record;
     }
 
     protected function gatherExecutionContext(): array
     {
-        if (!function_exists('app')) {
+        if (! function_exists('app')) {
             return ['type' => 'unknown'];
         }
 
@@ -67,7 +65,7 @@ class ContextProcessor implements ProcessorInterface
             if (function_exists('app') && app()->bound('queue')) {
                 try {
                     $context['connection'] = config('queue.default', 'sync');
-                    $context['queue'] = config('queue.connections.' . config('queue.default') . '.queue', 'default');
+                    $context['queue'] = config('queue.connections.'.config('queue.default').'.queue', 'default');
                 } catch (\Throwable $e) {
                     // Silently ignore
                 }
@@ -112,11 +110,12 @@ class ContextProcessor implements ProcessorInterface
     {
         try {
             $route = $request->route();
-            if (!$route) {
+            if (! $route) {
                 return null;
             }
 
             $action = $route->getActionName();
+
             return $action !== 'Closure' ? $action : null;
         } catch (\Throwable $e) {
             return null;
@@ -127,7 +126,7 @@ class ContextProcessor implements ProcessorInterface
     {
         try {
             $user = auth()->user();
-            if (!$user) {
+            if (! $user) {
                 return null;
             }
 
@@ -166,14 +165,14 @@ class ContextProcessor implements ProcessorInterface
 
         $exception = $context['exception'] ?? null;
 
-        if (!$exception instanceof \Throwable) {
+        if (! $exception instanceof \Throwable) {
             return null;
         }
 
         $file = $exception->getFile();
         $line = $exception->getLine();
 
-        if (!$file || !is_readable($file)) {
+        if (! $file || ! is_readable($file)) {
             return null;
         }
 
@@ -203,7 +202,7 @@ class ContextProcessor implements ProcessorInterface
 
     protected function gatherSqlQueries(): ?array
     {
-        if (!$this->queryCollector) {
+        if (! $this->queryCollector) {
             return null;
         }
 
@@ -223,6 +222,7 @@ class ContextProcessor implements ProcessorInterface
     {
         if (isset($_SERVER['argv']) && is_array($_SERVER['argv'])) {
             $command = implode(' ', $_SERVER['argv']);
+
             return str_contains($command, 'queue:work') || str_contains($command, 'queue:listen');
         }
 
@@ -236,6 +236,6 @@ class ContextProcessor implements ProcessorInterface
         // Monolog record context (excluding the exception itself)
         $data = array_diff_key($context, ['exception' => true]);
 
-        return !empty($data) ? $data : null;
+        return ! empty($data) ? $data : null;
     }
 }
