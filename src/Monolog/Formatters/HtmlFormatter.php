@@ -509,6 +509,6 @@ class HtmlFormatter extends BaseHtmlFormatter
             return $displayHtml;
         }
 
-        return '<a href="' . htmlspecialchars($href) . '" style="color: inherit; text-decoration: underline; text-decoration-color: #ccc;">' . $displayHtml . '</a>';
+        return '<a href="' . htmlspecialchars($href) . '" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; text-decoration-color: #ccc;">' . $displayHtml . '</a>';
     }
 }
