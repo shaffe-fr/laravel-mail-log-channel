@@ -17,7 +17,7 @@ Receive detailed error emails from your Laravel application. Plug it into Larave
 
 - **Rich error emails** — structured HTML with clear, readable sections
 - **Execution context** — HTTP request (method, URL, route, controller, authenticated user), Artisan command, or Queue job
-- **Environment info** — app environment, PHP/Laravel versions, server hostname
+- **Environment info** — app environment, PHP/Laravel versions, server hostname, peak memory, execution time
 - **Code snippet** — source code around the error line, highlighted
 - **Smart stack trace** — application frames expanded, vendor frames collapsed
 - **SQL queries** — last 10 queries with bindings and execution time
@@ -213,6 +213,12 @@ Remote path remapping (when server paths differ from local):
     'base_path' => '/local/path/to/project',
 ],
 ```
+
+## Environment Info
+
+Each error email includes badges showing the application environment, PHP and Laravel versions, server hostname, **peak memory usage**, and **execution time** (time elapsed since `LARAVEL_START`).
+
+This helps identify errors related to resource exhaustion or slow requests at a glance.
 
 ## Upgrading
 

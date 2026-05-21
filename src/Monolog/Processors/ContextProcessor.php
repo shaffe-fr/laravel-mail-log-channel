@@ -149,6 +149,10 @@ class ContextProcessor implements ProcessorInterface
             $env['php_version'] = PHP_VERSION;
             $env['laravel_version'] = app()->version();
             $env['server'] = gethostname() ?: null;
+            $env['memory_peak'] = memory_get_peak_usage(true);
+            $env['execution_time'] = defined('LARAVEL_START')
+                ? round((microtime(true) - LARAVEL_START) * 1000, 1)
+                : null;
         } catch (\Throwable $e) {
             // Silently ignore
         }

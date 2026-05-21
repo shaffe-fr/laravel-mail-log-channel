@@ -152,6 +152,12 @@ class HtmlFormatter extends BaseHtmlFormatter
         if (!empty($env['server'])) {
             $badges[] = '<span style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; background: #eee; color: #555;">' . htmlspecialchars($env['server']) . '</span>';
         }
+        if (!empty($env['memory_peak'])) {
+            $badges[] = '<span style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; background: #eee; color: #555;">' . $this->formatBytes($env['memory_peak']) . '</span>';
+        }
+        if (isset($env['execution_time']) && $env['execution_time'] !== null) {
+            $badges[] = '<span style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; background: #eee; color: #555;">' . $this->formatDuration($env['execution_time']) . '</span>';
+        }
 
         if (empty($badges)) {
             return '';
@@ -451,6 +457,24 @@ class HtmlFormatter extends BaseHtmlFormatter
             'testing', 'test' => '#2563eb',
             default => '#059669',
         };
+    }
+
+    protected function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 1) . ' MB';
+        }
+
+        return round($bytes / 1024) . ' KB';
+    }
+
+    protected function formatDuration(float $ms): string
+    {
+        if ($ms >= 1000) {
+            return round($ms / 1000, 2) . 's';
+        }
+
+        return round($ms, 1) . 'ms';
     }
 
     /**
