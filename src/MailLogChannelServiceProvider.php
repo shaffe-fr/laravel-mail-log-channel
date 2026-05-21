@@ -5,6 +5,7 @@ namespace Shaffe\MailLogChannel;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\ServiceProvider;
+use Shaffe\MailLogChannel\Console\TestMailLogCommand;
 
 class MailLogChannelServiceProvider extends ServiceProvider
 {
@@ -36,5 +37,11 @@ class MailLogChannelServiceProvider extends ServiceProvider
         $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $event) {
             $this->app->make(QueryCollector::class)->record($event);
         });
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                TestMailLogCommand::class,
+            ]);
+        }
     }
 }

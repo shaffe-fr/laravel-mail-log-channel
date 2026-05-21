@@ -25,6 +25,7 @@ Receive detailed error emails from your Laravel application. Plug it into Larave
 - **Editor links** — clickable file paths that open in your IDE
 - **Previous exceptions** — full chain display
 - **Additional context** — from `Exception::context()` and log record context
+- **Test command** — `php artisan mail-log:test` to verify your setup
 
 ## Installation
 
@@ -219,6 +220,26 @@ Remote path remapping (when server paths differ from local):
 Each error email includes badges showing the application environment, PHP and Laravel versions, server hostname, **peak memory usage**, and **execution time** (time elapsed since `LARAVEL_START`).
 
 This helps identify errors related to resource exhaustion or slow requests at a glance.
+
+## Testing Your Configuration
+
+Verify that your mail log channel is properly configured by sending a test email:
+
+```sh
+php artisan mail-log:test
+```
+
+Options:
+
+```sh
+# Test with a specific log level
+php artisan mail-log:test --level=critical
+
+# Test a specific channel name
+php artisan mail-log:test --channel=mail
+```
+
+This sends a fake exception through the configured channel so you can confirm recipients, SMTP settings, and throttle behavior without waiting for a real error.
 
 ## Upgrading
 
