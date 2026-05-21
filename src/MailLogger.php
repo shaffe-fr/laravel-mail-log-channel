@@ -2,7 +2,7 @@
 
 namespace Shaffe\MailLogChannel;
 
-use Illuminate\Contracts\Mail\Mailable;
+use Illuminate\Mail\Mailable;
 use InvalidArgumentException;
 use Monolog\Level;
 use Monolog\Logger;
@@ -64,12 +64,12 @@ class MailLogger
     /**
      * Create the mailable log.
      *
-     * @return \Illuminate\Contracts\Mail\Mailable
+     * @return \Illuminate\Mail\Mailable
      */
-    protected function buildMailable(): Mailable
+    protected function buildMailable(): \Illuminate\Mail\Mailable
     {
         $mailableClass = $this->config('mailable') ?? MailableLog::class;
-        /** @var \Illuminate\Contracts\Mail\Mailable $mailable */
+        /** @var \Illuminate\Mail\Mailable $mailable */
         $mailable = new $mailableClass();
 
         // When using level-based routing, recipients are set dynamically at send time.
@@ -114,8 +114,45 @@ class MailLogger
             return [];
         }
 
+        return $this->parseRecipients((array) $to);
+    }
+
+    /**
+     * Get the default from address.
+     *
+     * @return string|null
+     */
+    protected function defaultFromAddress(): ?string
+    {
+        return config('mail.from.address');
+    }
+
+    /**
+     * Get the default from name.
+     *
+     * @return string|null
+     */
+    protected function defaultFromName(): ?string
+    {
+        return config('mail.from.name');
+    }
+
+    /**
+     * Parse a recipient list into a normalized array of ['email' => ..., 'name' => ...].
+     *
+     * Supports:
+     * - Plain strings: ['admin@example.com']
+     * - Named format: ['admin@example.com' => 'Admin']
+     * - Structured format: [['email' => '...', 'name' => '...'] or ['address' => '...', 'name' => '...']]
+     *
+     * @param  array  $items
+     * @return array<int, array{email: string, name: string|null}>
+     */
+    protected function parseRecipients(array $items): array
+    {
         $recipients = [];
-        foreach ((array)$to as $emailOrIndex => $nameOrEmail) {
+
+        foreach ($items as $emailOrIndex => $nameOrEmail) {
             if (is_array($nameOrEmail)) {
                 $email = $nameOrEmail['email'] ?? $nameOrEmail['address'] ?? null;
                 if ($email) {
@@ -138,26 +175,6 @@ class MailLogger
         }
 
         return $recipients;
-    }
-
-    /**
-     * Get the default from address.
-     *
-     * @return string
-     */
-    protected function defaultFromAddress(): ?string
-    {
-        return config('mail.from.address');
-    }
-
-    /**
-     * Get the default from name.
-     *
-     * @return string
-     */
-    protected function defaultFromName(): ?string
-    {
-        return config('mail.from.name');
     }
 
     /**
@@ -245,21 +262,7 @@ class MailLogger
                 continue;
             }
 
-            $recipients = [];
-            foreach ((array) $value as $emailOrIndex => $nameOrEmail) {
-                if (is_array($nameOrEmail)) {
-                    $email = $nameOrEmail['email'] ?? $nameOrEmail['address'] ?? null;
-                    if ($email) {
-                        $recipients[] = ['email' => $email, 'name' => $nameOrEmail['name'] ?? null];
-                    }
-                } elseif (is_string($emailOrIndex)) {
-                    $recipients[] = ['email' => $emailOrIndex, 'name' => $nameOrEmail];
-                } elseif (is_string($nameOrEmail)) {
-                    $recipients[] = ['email' => $nameOrEmail, 'name' => null];
-                }
-            }
-
-            $result[$normalizedKey] = $recipients;
+            $result[$normalizedKey] = $this->parseRecipients((array) $value);
         }
 
         return !empty($result) ? $result : null;
