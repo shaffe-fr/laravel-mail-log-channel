@@ -1,182 +1,177 @@
 # Laravel Mail Log Channel
 
-
-[![Latest Stable Version](https://img.shields.io/github/v/release/shaffe-fr/laravel-mail-log-channel.svg)](https://packagist.org/packages/shaffe/laravel-mail-log-channel) [![Total Downloads](https://img.shields.io/packagist/dt/shaffe/laravel-mail-log-channel.svg)](https://packagist.org/packages/shaffe/laravel-mail-log-channel)
+[![Latest Stable Version](https://img.shields.io/github/v/release/shaffe-fr/laravel-mail-log-channel.svg)](https://packagist.org/packages/shaffe/laravel-mail-log-channel)
+[![Total Downloads](https://img.shields.io/packagist/dt/shaffe/laravel-mail-log-channel.svg)](https://packagist.org/packages/shaffe/laravel-mail-log-channel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A service provider to add support for logging via email using Laravels built-in mail provider.
-
-This package is a fork of [laravel-log-mailer](https://packagist.org/packages/designmynight/laravel-log-mailer) by Steve Porter.
-
-## Features
-
-- Structured error emails with clear sections
-- Execution context: HTTP request (method, URL, route, controller, user), Artisan command, or Queue job (connection, queue)
-- Environment badges: app environment, Laravel/PHP versions, server hostname
-- Code snippet with error line highlighted
-- Smart stack trace: application frames visible, vendor frames collapsed
-- SQL queries with bindings and execution time
-- Additional context from `Exception::context()` and log record
-- Relative file paths for readability
-- Previous exception chain display
-- Clickable file paths to open directly in your editor (via `app.editor` config)
+Receive detailed error emails from your Laravel application. Plug it into Laravel's logging stack and get notified when things break — with full context, stack trace, SQL queries, and more.
 
 <details>
-<summary>📸 See an example email</summary>
+<summary>📸 Example email</summary>
 
 ![screenshot](docs/screenshot.png)
 
 </details>
 
-## Table of contents
+## Features
 
-* [Installation](#installation)
-* [Configuration](#configuration)
-* [SQL Query Logging](#sql-query-logging)
-* [Editor Links](#editor-links)
-* [Upgrading](#upgrading)
+- **Rich error emails** — structured HTML with clear, readable sections
+- **Execution context** — HTTP request (method, URL, route, controller, authenticated user), Artisan command, or Queue job
+- **Environment info** — app environment, PHP/Laravel versions, server hostname
+- **Code snippet** — source code around the error line, highlighted
+- **Smart stack trace** — application frames expanded, vendor frames collapsed
+- **SQL queries** — last 10 queries with bindings and execution time
+- **Editor links** — clickable file paths that open in your IDE
+- **Previous exceptions** — full chain display
+- **Additional context** — from `Exception::context()` and log record context
 
 ## Installation
-
-You can install this package via composer using this commande:
 
 ```sh
 composer require shaffe/laravel-mail-log-channel
 ```
 
-### Laravel version compatibility
+The package auto-registers its service provider.
 
-| Laravel                      | Package |
-|:-----------------------------|:--------|
-| 10, 11, 12, 13              | ^3.0    |
-| 5.6, 6, 7, 8, 9, 10, 11, 12, 13 | ^2.0    |
-| 5.6.x                        | ^1.0    |
+### Compatibility
 
-The package will automatically register itself.
+| Laravel            | Package |
+|:-------------------|:--------|
+| 10, 11, 12, 13    | ^3.0    |
+| 5.6 – 13          | ^2.0    |
+| 5.6                | ^1.0    |
 
-## Configuration
+## Quick Start
 
-To ensure all unhandled exceptions are mailed:
-
-1. create a `mail` logging channel in `config/logging.php`,
-2. add this `mail` channel to your current logging stack,
-3. add a `LOG_MAIL_ADDRESS` to your `.env` file to define the recipient.
-
-You can specify multiple channels and individually change the recipients, the subject and the email template.
+Add a `mail` channel to `config/logging.php` and include it in your stack:
 
 ```php
 'channels' => [
     'stack' => [
         'driver' => 'stack',
-        // 2. Add mail to the stack:
-        'channels' => ['single', 'mail'],
+        'channels' => ['daily', 'mail'],
     ],
 
-    // ...
-
-    // 1. Create a mail logging channel:
     'mail' => [
         'driver' => 'mail',
-        'level' => env('LOG_MAIL_LEVEL', 'notice'),
-
-        // Specify mail recipient
-        'to' => [
-            [
-                'address' => env('LOG_MAIL_ADDRESS'),
-                'name' => 'Error',
-            ],
-        ],
-
-        'from' => [
-            // Defaults to config('mail.from.address')
-            'address' => env('LOG_MAIL_ADDRESS'),
-            // Defaults to config('mail.from.name')
-            'name' => 'Errors'
-        ],
-
-        // Show all vendor frames in stack trace (collapsed by default)
-        // 'collapse_vendor_frames' => true,
-
-        // Disable SQL query collection in error emails
-        // 'log_queries' => false,
-
-        // Optionally overwrite the subject format pattern
-        // Available placeholders: %level_name%, %message%, %env%, %context%, %app_name%, %channel%, %datetime%
-        // 'subject_format' => '[%level_name%] [%env%] %context% — %message%',
-
-        // Optionally overwrite the mailable template
-        // Two variables are sent to the view: `string $content` and `array $records`
-        // 'mailable' => NewLogMailable::class
+        'level' => env('LOG_MAIL_LEVEL', 'error'),
+        'to' => env('LOG_MAIL_ADDRESS'),
     ],
 ],
 ```
 
-### Recipients configuration format
+Add the recipient to your `.env`:
 
-The following `to` config formats are supported:
+```env
+LOG_MAIL_ADDRESS=errors@yourapp.com
+```
 
-* single email address:
+That's it. Unhandled exceptions at or above the configured level will now arrive in your inbox.
 
-    ```php
-    'to' => env('LOG_MAIL_ADDRESS', ''),
-    ```
+## Configuration Reference
 
-* array of email addresses:
-
-     ```php
-    'to' => explode(',', env('LOG_MAIL_ADDRESS', '')),
-    ```
-
-* associative array of email => name addresses:
-
-    ```php
-    'to' => [env('LOG_MAIL_ADDRESS', '') => 'Error'],`
-    ```
-
-* array of email and name:
-
-    ```php
-    'to' => [
-         [
-             'address' => env('LOG_MAIL_ADDRESS', ''),
-             'name' => 'Error',
-         ],
-     ],
-    ```
-
-## SQL Query Logging
-
-The last 10 SQL queries (with bindings and execution time) are automatically included in error emails.
-
-To disable it:
+All options with their defaults:
 
 ```php
 'mail' => [
     'driver' => 'mail',
-    'log_queries' => false,
-    // ...
+    'level' => 'error',
+
+    // Recipients (see formats below)
+    'to' => env('LOG_MAIL_ADDRESS'),
+
+    // Sender (defaults to mail.from config)
+    'from' => [
+        'address' => env('LOG_MAIL_FROM_ADDRESS'),
+        'name' => env('LOG_MAIL_FROM_NAME', 'Errors'),
+    ],
+
+    // Subject line pattern
+    // Placeholders: %level_name%, %message%, %env%, %context%, %app_name%, %channel%, %datetime%
+    'subject_format' => '[%level_name%] [%env%] %context% — %message%',
+
+
+
+    // Include last N SQL queries in the email
+    'log_queries' => true,
+
+    // Collapse vendor frames in stack trace
+    'collapse_vendor_frames' => true,
+
+    // Custom Mailable class (receives $content and $records)
+    // 'mailable' => \App\Mail\CustomLogMail::class,
 ],
+```
+
+### Recipient Formats
+
+The `to` option accepts several formats:
+
+```php
+// Simple string
+'to' => 'dev@example.com',
+
+// Multiple addresses
+'to' => ['dev@example.com', 'ops@example.com'],
+
+// With names
+'to' => ['dev@example.com' => 'Dev Team'],
+
+// Structured
+'to' => [
+    ['address' => 'dev@example.com', 'name' => 'Dev Team'],
+    ['address' => 'ops@example.com', 'name' => 'Ops'],
+],
+```
+
+
+
+### Configuration
+
+```php
+// Throttle window in seconds (default: 60)
+'throttle' => 60,
+
+// Disable throttling
+'throttle' => 0,
+
+// Use a specific cache store (useful for multi-server setups)
+'throttle_cache_store' => 'redis',
+```
+
+### Good to Know
+
+- Messages with dynamic content (e.g. `"User 42 not found"`) produce distinct fingerprints — they won't be incorrectly grouped together.
+- For multi-server deployments, use a shared cache store (Redis, Memcached) so throttling works across all instances.
+
+## SQL Query Logging
+
+The last 10 SQL queries leading up to the error are included in the email, with bindings and execution time. This helps understand the database state at the time of failure.
+
+Disable with:
+
+```php
+'log_queries' => false,
 ```
 
 ## Editor Links
 
-File paths in error emails are clickable if you have configured the `app.editor` option in your Laravel application. Clicking a link will open the file at the correct line in your editor.
-
-Laravel supports this natively since v9. Set it in `config/app.php`:
+File paths in error emails are clickable when `app.editor` is configured. Clicking opens the file at the correct line in your IDE.
 
 ```php
+// config/app.php
 'editor' => 'phpstorm',
 ```
 
-Or via environment variable:
+Or via `.env`:
 
 ```env
 APP_EDITOR=phpstorm
 ```
 
-Supported editors: `phpstorm`, `vscode`, `vscode-insiders`, `cursor`, `sublime`, `textmate`, `atom`, `nova`, `idea`.
+Examples: `phpstorm`, `vscode`, `vscode-insiders`, `cursor`, `sublime`, `kiro`, `nova`, `idea`.
 
-You can also use a custom URL scheme:
+Custom URL scheme:
 
 ```php
 'editor' => [
@@ -184,7 +179,7 @@ You can also use a custom URL scheme:
 ],
 ```
 
-For remote servers where file paths differ from your local machine, use `base_path` to remap:
+Remote path remapping (when server paths differ from local):
 
 ```php
 'editor' => [
@@ -195,10 +190,19 @@ For remote servers where file paths differ from your local machine, use `base_pa
 
 ## Upgrading
 
-### From v2 to v3
+### v2 → v3
 
-v3 completely redesigns the email output. The HTML format has changed and the `HtmlFormatter::addRow()` method has been removed.
+- Requires PHP 8.1+ and Laravel 10+
+- Complete redesign of the email HTML output
+- `HtmlFormatter::addRow()` has been removed
+- Configuration API is unchanged — no config migration needed
 
-v3 requires PHP 8.1+ and Laravel 10+. For older versions, use v2.
+If you extended `HtmlFormatter` or parsed the HTML output, review the new format.
 
-If you extended `HtmlFormatter` or relied on the HTML structure for parsing/filtering, review the new output format. The configuration API is unchanged — no config changes needed.
+## Credits
+
+This package is a fork of [laravel-log-mailer](https://packagist.org/packages/designmynight/laravel-log-mailer) by Steve Porter.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
