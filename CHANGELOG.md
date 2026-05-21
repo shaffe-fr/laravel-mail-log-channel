@@ -2,6 +2,29 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 3.1.0 - 2026-05-21
+
+### Added
+
+- Level-based routing: configure different recipients per log level
+- Artisan `mail-log:test` command to send a test notification
+- Memory peak and execution time in environment context
+- Exception throttling via cache to avoid mail flooding
+- Clickable IP address link (whatismyipaddress.com)
+- `rel="noopener noreferrer"` on external links
+- Integration test suite
+- Laravel Pint and Larastan (PHPStan level 5) with composer scripts
+
+### Fixed
+
+- Clone mailable per send and resolve mailer lazily (fixes reuse issues)
+- Return null for closure routes in `resolveController`
+- Use scoped binding for `QueryCollector` to reset state between queued jobs
+
+### Changed
+
+- Rework README with updated documentation
+
 ## 3.0.2 - 2026-03-25
 
 - Fix context processor leaking execution data into other log channels when using a stack
