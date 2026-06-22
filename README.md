@@ -103,6 +103,9 @@ All options with their defaults:
     // Include last N SQL queries in the email
     'log_queries' => true,
 
+    // Maximum number of SQL queries to include (default: 10)
+    'query_limit' => 10,
+
     // Include the incoming request payload (opt-in, off by default).
     // Sensitive fields (passwords, tokens, card data) are always redacted.
     'log_request_payload' => false,
@@ -228,11 +231,13 @@ This gives you immediate visibility into the scale of a recurring issue without 
 
 ## SQL Query Logging
 
-The last 10 SQL queries leading up to the error are included in the email, with bindings and execution time. This helps understand the database state at the time of failure.
-
-Disable with:
+The last N SQL queries leading up to the error are included in the email, with bindings and execution time. This helps understand the database state at the time of failure.
 
 ```php
+// Number of queries to keep (default: 10)
+'query_limit' => 10,
+
+// Disable SQL query logging entirely
 'log_queries' => false,
 ```
 

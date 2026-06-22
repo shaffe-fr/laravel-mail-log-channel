@@ -10,10 +10,18 @@ All notable changes to `laravel-mail-log-channel` will be documented in this fil
 - Configurable redaction (`redact_keys`, merged with built-in defaults) and size limits (`payload_max_value_length`, `payload_max_keys`)
 - Uploaded files are described (name, type, size) without dumping their contents
 - "Request Payload" and "Uploaded Files" sections in the error email
+- Configurable `query_limit` option to control how many SQL queries are included (default: 10)
+- Multi-guard support: authenticated user is now resolved across all configured auth guards (not just the default)
 
 ### Fixed
 
 - Normalize query bindings (DateTime → string, bool → int) so displayed values match what the database receives
+- Use atomic cache operations (`add()`) in ThrottleState to prevent race conditions under high concurrency
+- Deep clone mailable before each send to prevent shared state when using custom mailables with nested objects
+
+### Changed
+
+- QueryExecuted listener is only registered when a mail log channel is actually configured (reduces overhead)
 
 ## 3.1.0 - 2026-05-21
 
