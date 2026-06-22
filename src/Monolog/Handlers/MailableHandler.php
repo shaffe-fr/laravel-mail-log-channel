@@ -200,8 +200,15 @@ class MailableHandler extends MailHandler
             }
         }
 
-        // Clone the mailable to prevent state leaking between sends
-        $mailable = clone $this->mailable;
+        // Clone the mailable to prevent state leaking between sends.
+        // Use serialization for a deep clone to avoid shared references
+        // on complex custom mailables with nested objects.
+        try {
+            $mailable = unserialize(serialize($this->mailable));
+        } catch (\Throwable) {
+            // Fallback to shallow clone if serialization fails (e.g. closures)
+            $mailable = clone $this->mailable;
+        }
 
         $mailable->with(
             [
