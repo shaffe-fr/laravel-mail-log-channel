@@ -53,7 +53,13 @@ class MailLogger
             $queryCollector = app(QueryCollector::class);
         }
 
-        $mailHandler->pushProcessor(new ContextProcessor($queryCollector));
+        $mailHandler->pushProcessor(new ContextProcessor(
+            $queryCollector,
+            $this->config('log_request_payload') ?? false,
+            $this->config('redact_keys') ?? [],
+            $this->config('payload_max_value_length') ?? 500,
+            $this->config('payload_max_keys') ?? 50,
+        ));
 
         $logger = new Logger('mailable', [$mailHandler]);
 

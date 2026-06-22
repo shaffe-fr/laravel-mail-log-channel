@@ -21,6 +21,7 @@ Receive detailed error emails from your Laravel application. Plug it into Larave
 - **Code snippet** — source code around the error line, highlighted
 - **Smart stack trace** — application frames expanded, vendor frames collapsed
 - **SQL queries** — last 10 queries with bindings and execution time
+- **Request payload** — optional, redacted capture of the incoming request body and uploaded files
 - **Throttling** — identical errors are deduplicated to avoid inbox flooding
 - **Level-based routing** — send to different recipients based on log level, suppress specific levels
 - **Editor links** — clickable file paths that open in your IDE
@@ -101,6 +102,19 @@ All options with their defaults:
 
     // Include last N SQL queries in the email
     'log_queries' => true,
+
+    // Include the incoming request payload (opt-in, off by default).
+    // Sensitive fields (passwords, tokens, card data) are always redacted.
+    'log_request_payload' => false,
+
+    // Extra field names to redact, merged with the built-in defaults.
+    'redact_keys' => [],
+
+    // Truncate scalar values longer than this many characters.
+    'payload_max_value_length' => 500,
+
+    // Maximum number of fields kept per array level.
+    'payload_max_keys' => 50,
 
     // Collapse vendor frames in stack trace
     'collapse_vendor_frames' => true,
@@ -221,6 +235,58 @@ Disable with:
 ```php
 'log_queries' => false,
 ```
+
+## Request Payload
+
+Capture the incoming request body in the error email to help reproduce HTTP failures. **Disabled by default** because request data is sensitive.
+
+Enable it per channel:
+
+```php
+'log_request_payload' => true,
+```
+
+The payload is read with Laravel's `request->all()`, so it covers both form (`application/x-www-form-urlencoded`, `multipart/form-data`) and JSON requests. Nothing is captured on the console or when no request is available.
+
+### Redaction
+
+Sensitive fields are **always** redacted, recursively and case-insensitively. Their keys remain visible as `[REDACTED]` so you can tell which fields were present without seeing their values.
+
+The built-in list covers:
+
+| Category | Fields |
+|:---------|:-------|
+| Auth / secrets | `password`, `password_confirmation`, `current_password`, `new_password`, `secret`, `token`, `_token`, `access_token`, `refresh_token`, `api_key`, `apikey`, `api_token`, `authorization`, `client_secret` |
+| Card / PCI | `card_number`, `cardnumber`, `card_no`, `cc_number`, `ccnumber`, `cc_num`, `cvc`, `cvv`, `cvv2`, `cvc2`, `card_cvc`, `card_cvv`, `security_code`, `exp_month`, `exp_year`, `expiry`, `expiration`, `expiration_date`, `exp_date` |
+| Stripe | `stripe_token`, `stripetoken`, `payment_method`, `payment_intent`, `setup_intent` |
+| Braintree / PayPal | `payment_method_nonce`, `nonce` |
+| Bank details | `iban`, `bic`, `account_number`, `routing_number`, `sort_code` |
+
+Add your own field names — they are **merged** with the defaults, never replacing them:
+
+```php
+'redact_keys' => ['ssn', 'national_id'],
+```
+
+Redacted fields remain visible in the email as `[REDACTED]` so you can see **which** fields were submitted without exposing their values.
+
+### Size limits
+
+To keep emails readable and within SMTP limits, the payload is bounded:
+
+```php
+// Truncate any scalar value longer than this (characters).
+// Truncated values are annotated, e.g. "abc… [1200 chars total]".
+'payload_max_value_length' => 500,
+
+// Keep at most this many fields per array level.
+// Omitted fields are reported as "+ N more fields omitted".
+'payload_max_keys' => 50,
+```
+
+### Uploaded files
+
+Files are **described, never dumped** — only the original name, MIME type, and size are included. File contents are never read or attached.
 
 ## Editor Links
 

@@ -2,6 +2,19 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Optional request payload capture (`log_request_payload`, off by default) with recursive, case-insensitive redaction of authentication and payment fields (Stripe, Braintree, PayPal, generic card forms)
+- Configurable redaction (`redact_keys`, merged with built-in defaults) and size limits (`payload_max_value_length`, `payload_max_keys`)
+- Uploaded files are described (name, type, size) without dumping their contents
+- "Request Payload" and "Uploaded Files" sections in the error email
+
+### Fixed
+
+- Normalize query bindings (DateTime → string, bool → int) so displayed values match what the database receives
+
 ## 3.1.0 - 2026-05-21
 
 ### Added

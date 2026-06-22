@@ -8,11 +8,104 @@ use Shaffe\MailLogChannel\QueryCollector;
 
 class ContextProcessor implements ProcessorInterface
 {
+    /**
+     * Field names that are redacted from the request payload by default.
+     *
+     * Covers common authentication secrets and PCI / payment form fields used
+     * by popular gateways (Stripe, Braintree, PayPal, generic card forms).
+     *
+     * @var array<int, string>
+     */
+    public const DEFAULT_REDACT_KEYS = [
+        // Authentication / secrets
+        'password',
+        'password_confirmation',
+        'current_password',
+        'new_password',
+        'secret',
+        'token',
+        '_token',
+        'access_token',
+        'refresh_token',
+        'api_key',
+        'apikey',
+        'api_token',
+        'authorization',
+        'client_secret',
+
+        // Card / payment data (PCI)
+        'card_number',
+        'cardnumber',
+        'card_no',
+        'cc_number',
+        'ccnumber',
+        'cc_num',
+        'cvc',
+        'cvv',
+        'cvv2',
+        'cvc2',
+        'card_cvc',
+        'card_cvv',
+        'security_code',
+        'exp_month',
+        'exp_year',
+        'expiry',
+        'expiration',
+        'expiration_date',
+        'exp_date',
+
+        // Stripe
+        'stripe_token',
+        'stripetoken',
+        'payment_method',
+        'payment_intent',
+        'setup_intent',
+
+        // Braintree / PayPal / other gateways
+        'payment_method_nonce',
+        'nonce',
+
+        // Bank details
+        'iban',
+        'bic',
+        'account_number',
+        'routing_number',
+        'sort_code',
+    ];
+
     protected ?QueryCollector $queryCollector;
 
-    public function __construct(?QueryCollector $queryCollector = null)
-    {
+    protected bool $logRequestPayload;
+
+    /** @var array<int, string> Lowercased field names to redact. */
+    protected array $redactKeys;
+
+    protected int $maxValueLength;
+
+    protected int $maxKeys;
+
+    /**
+     * @param  array<int, string>  $redactKeys  Extra field names to redact, merged with self::DEFAULT_REDACT_KEYS.
+     * @param  int  $maxValueLength  Max length of a scalar value before it is truncated.
+     * @param  int  $maxKeys  Max number of keys kept per array level.
+     */
+    public function __construct(
+        ?QueryCollector $queryCollector = null,
+        bool $logRequestPayload = false,
+        array $redactKeys = [],
+        int $maxValueLength = 500,
+        int $maxKeys = 50,
+    ) {
         $this->queryCollector = $queryCollector;
+        $this->logRequestPayload = $logRequestPayload;
+        // User-provided keys are additive: the PCI/auth defaults are always
+        // applied so a custom list can never accidentally expose them.
+        $this->redactKeys = array_values(array_unique(array_map(
+            'strtolower',
+            array_merge(self::DEFAULT_REDACT_KEYS, $redactKeys)
+        )));
+        $this->maxValueLength = $maxValueLength;
+        $this->maxKeys = $maxKeys;
     }
 
     /**
@@ -24,6 +117,7 @@ class ContextProcessor implements ProcessorInterface
 
         $extra['execution_context'] = $this->gatherExecutionContext();
         $extra['environment'] = $this->gatherEnvironment();
+        $extra['request_payload'] = $this->gatherRequestPayload();
         $extra['code_snippet'] = $this->extractCodeSnippet($record);
         $extra['sql_queries'] = $this->gatherSqlQueries();
         $extra['additional_context'] = $this->gatherAdditionalContext($record);
@@ -157,6 +251,179 @@ class ContextProcessor implements ProcessorInterface
         }
 
         return $env;
+    }
+
+    /**
+     * Gather the incoming request payload (opt-in).
+     *
+     * Returns null when disabled, on the console, or when no request/data is
+     * available. Sensitive fields are redacted, values are truncated, and the
+     * number of kept keys is bounded. Uploaded files are described (name, type,
+     * size) — their contents are never serialized.
+     *
+     * @return array{data?: array<string, mixed>, files?: array<int, array{name: string, type: string|null, size: int|null}>, truncated_keys?: int}|null
+     */
+    protected function gatherRequestPayload(): ?array
+    {
+        if (! $this->logRequestPayload) {
+            return null;
+        }
+
+        if (! function_exists('app') || ! function_exists('request')) {
+            return null;
+        }
+
+        try {
+            $app = app();
+
+            if ($app->runningInConsole()) {
+                return null;
+            }
+
+            $request = request();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $payload = [];
+
+        try {
+            // Use request->all() to capture the full input structure, then let
+            // sanitizePayload() redact sensitive keys uniformly (shown as [REDACTED]
+            // so the developer knows the field was present without seeing its value).
+            $data = $request->all();
+
+            [$sanitized, $truncatedKeys] = $this->sanitizePayload($data);
+
+            if ($sanitized !== []) {
+                $payload['data'] = $sanitized;
+            }
+
+            if ($truncatedKeys > 0) {
+                $payload['truncated_keys'] = $truncatedKeys;
+            }
+        } catch (\Throwable $e) {
+            // Silently ignore — never let payload collection break logging.
+        }
+
+        try {
+            $files = $this->describeUploadedFiles($request);
+            if ($files !== []) {
+                $payload['files'] = $files;
+            }
+        } catch (\Throwable $e) {
+            // Silently ignore
+        }
+
+        return $payload !== [] ? $payload : null;
+    }
+
+    /**
+     * Recursively redact, truncate and bound an input array.
+     *
+     * @param  array<array-key, mixed>  $data
+     * @return array{0: array<array-key, mixed>, 1: int} Sanitized data and the number of keys dropped by the per-level cap.
+     */
+    protected function sanitizePayload(array $data, int $depth = 0): array
+    {
+        $result = [];
+        $kept = 0;
+        $truncatedKeys = 0;
+
+        foreach ($data as $key => $value) {
+            // Redacted keys don't consume the maxKeys budget.
+            if (is_string($key) && in_array(strtolower($key), $this->redactKeys, true)) {
+                $result[$key] = '[REDACTED]';
+
+                continue;
+            }
+
+            if ($kept >= $this->maxKeys) {
+                $truncatedKeys++;
+
+                continue;
+            }
+
+            $kept++;
+
+            if (is_array($value)) {
+                // Guard against pathologically deep structures.
+                if ($depth >= 5) {
+                    $result[$key] = '[…]';
+
+                    continue;
+                }
+
+                [$nested, $nestedTruncated] = $this->sanitizePayload($value, $depth + 1);
+                $result[$key] = $nested;
+                $truncatedKeys += $nestedTruncated;
+
+                continue;
+            }
+
+            $result[$key] = $this->truncateValue($value);
+        }
+
+        return [$result, $truncatedKeys];
+    }
+
+    /**
+     * Normalize and truncate a scalar value, annotating its original size.
+     */
+    protected function truncateValue(mixed $value): mixed
+    {
+        if ($value === null || is_bool($value) || is_int($value) || is_float($value)) {
+            return $value;
+        }
+
+        if (! is_string($value)) {
+            // Objects/closures that slipped through: describe rather than dump.
+            return '['.gettype($value).']';
+        }
+
+        $length = mb_strlen($value);
+
+        if ($length <= $this->maxValueLength) {
+            return $value;
+        }
+
+        return mb_substr($value, 0, $this->maxValueLength).'… ['.$length.' chars total]';
+    }
+
+    /**
+     * Describe uploaded files without reading their contents.
+     *
+     * @return array<int, array{name: string, type: string|null, size: int|null}>
+     */
+    protected function describeUploadedFiles($request): array
+    {
+        if (! method_exists($request, 'allFiles')) {
+            return [];
+        }
+
+        $described = [];
+
+        $walk = function ($files) use (&$walk, &$described) {
+            foreach ($files as $file) {
+                if (is_array($file)) {
+                    $walk($file);
+
+                    continue;
+                }
+
+                if ($file instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
+                    $described[] = [
+                        'name' => $file->getClientOriginalName(),
+                        'type' => $file->getClientMimeType(),
+                        'size' => $file->getSize(),
+                    ];
+                }
+            }
+        };
+
+        $walk($request->allFiles());
+
+        return $described;
     }
 
     protected function extractCodeSnippet($record): ?array

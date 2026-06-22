@@ -30,6 +30,7 @@ class HtmlFormatter extends BaseHtmlFormatter
         $output .= $this->buildThrottleNotice($record);
         $output .= $this->buildExecutionContextSection($record);
         $output .= $this->buildEnvironmentSection($record);
+        $output .= $this->buildRequestPayloadSection($record);
         $output .= $this->buildExceptionSection($record);
         $output .= $this->buildAdditionalContextSection($record);
         $output .= $this->buildCodeSnippetSection($record);
@@ -164,6 +165,56 @@ class HtmlFormatter extends BaseHtmlFormatter
         }
 
         return '<tr><td style="padding: 10px 15px; border-bottom: 1px solid #e5e5e5;">'.implode(' ', $badges).'</td></tr>';
+    }
+
+    protected function buildRequestPayloadSection($record): string
+    {
+        $extra = $record instanceof LogRecord ? $record->extra : ($record['extra'] ?? []);
+        $payload = $extra['request_payload'] ?? null;
+
+        if (! $payload) {
+            return '';
+        }
+
+        $output = '';
+
+        if (! empty($payload['data'])) {
+            $output .= $this->sectionTitle('Request Payload');
+
+            foreach ($payload['data'] as $key => $value) {
+                $display = is_scalar($value) || $value === null
+                    ? (string) ($value ?? 'null')
+                    : json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+                $output .= $this->keyValueRow((string) $key, '<code>'.htmlspecialchars($display).'</code>');
+            }
+
+            if (! empty($payload['truncated_keys'])) {
+                $output .= '<tr><td style="padding: 4px 15px; font-size: 12px; color: #999; font-style: italic;">'
+                    .'+ '.(int) $payload['truncated_keys'].' more field'.($payload['truncated_keys'] > 1 ? 's' : '').' omitted'
+                    .'</td></tr>';
+            }
+        }
+
+        if (! empty($payload['files'])) {
+            $output .= $this->sectionTitle('Uploaded Files');
+
+            foreach ($payload['files'] as $file) {
+                $name = $file['name'] ?? 'unknown';
+                $meta = [];
+                if (! empty($file['type'])) {
+                    $meta[] = htmlspecialchars($file['type']);
+                }
+                if (isset($file['size'])) {
+                    $meta[] = $this->formatBytes((int) $file['size']);
+                }
+
+                $metaStr = $meta ? ' <span style="color: #999;">('.implode(', ', $meta).')</span>' : '';
+                $output .= $this->keyValueRow('File', '<code>'.htmlspecialchars($name).'</code>'.$metaStr);
+            }
+        }
+
+        return $output;
     }
 
     protected function buildExceptionSection($record): string
