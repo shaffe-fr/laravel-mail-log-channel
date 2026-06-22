@@ -97,4 +97,56 @@ class QueryCollectorTest extends TestCase
         $this->assertEmpty($collector->getQueries());
         $this->assertEquals(0, $collector->getTotal());
     }
+
+    public function test_normalizes_datetime_bindings(): void
+    {
+        $collector = new QueryCollector();
+
+        $date = new \DateTime('2026-06-22 23:59:59');
+        $collector->record($this->makeQueryEvent('SELECT * FROM t WHERE d = ?', [$date]));
+
+        $this->assertEquals('2026-06-22 23:59:59', $collector->getQueries()[0]['bindings'][0]);
+    }
+
+    public function test_normalizes_carbon_bindings(): void
+    {
+        $collector = new QueryCollector();
+
+        // Carbon extends DateTime, so this covers the real-world case.
+        $carbon = \Carbon\Carbon::parse('2026-06-22 23:59:59', 'Europe/Paris');
+        $collector->record($this->makeQueryEvent('SELECT * FROM t WHERE ends_at <= ?', [$carbon]));
+
+        $this->assertEquals('2026-06-22 23:59:59', $collector->getQueries()[0]['bindings'][0]);
+    }
+
+    public function test_normalizes_unknown_object_bindings(): void
+    {
+        // Objects that are not DateTimeInterface are left as-is, mirroring
+        // what Laravel's Connection::prepareBindings() does. PDO would call
+        // __toString() on them if available, or throw — that's an app-level bug.
+        $collector = new QueryCollector();
+
+        $obj = new \stdClass();
+        $collector->record($this->makeQueryEvent('SELECT 1 WHERE x = ?', [$obj]));
+
+        $this->assertSame($obj, $collector->getQueries()[0]['bindings'][0]);
+    }
+
+    public function test_preserves_scalar_bindings(): void
+    {
+        $collector = new QueryCollector();
+
+        $collector->record($this->makeQueryEvent('SELECT 1', [42, 'foo', null, 3.14]));
+
+        $this->assertEquals([42, 'foo', null, 3.14], $collector->getQueries()[0]['bindings']);
+    }
+
+    public function test_normalizes_bool_bindings_to_int(): void
+    {
+        $collector = new QueryCollector();
+
+        $collector->record($this->makeQueryEvent('SELECT 1 WHERE active = ? AND deleted = ?', [true, false]));
+
+        $this->assertSame([1, 0], $collector->getQueries()[0]['bindings']);
+    }
 }

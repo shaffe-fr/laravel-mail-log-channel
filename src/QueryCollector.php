@@ -24,7 +24,7 @@ class QueryCollector
         $this->queries[] = [
             'sql' => $event->sql,
             'time' => $event->time,
-            'bindings' => $event->bindings,
+            'bindings' => $this->normalizeBindings($event->bindings),
         ];
 
         if (count($this->queries) > $this->limit) {
@@ -52,5 +52,33 @@ class QueryCollector
     public function getTotal(): int
     {
         return $this->total;
+    }
+
+    /**
+     * Normalize query bindings to scalar-safe values.
+     *
+     * Mirrors what Laravel's Connection::prepareBindings() does before sending
+     * values to PDO, so the displayed bindings match what the database actually
+     * receives:
+     *   - DateTimeInterface (Carbon, DateTime, …) → 'Y-m-d H:i:s' string
+     *   - bool → int  (PDO receives 0/1, not true/false)
+     *   - everything else is left untouched
+     *
+     * @param  array<int|string, mixed>  $bindings
+     * @return array<int|string, mixed>
+     */
+    protected function normalizeBindings(array $bindings): array
+    {
+        return array_map(function (mixed $value): mixed {
+            if ($value instanceof \DateTimeInterface) {
+                return $value->format('Y-m-d H:i:s');
+            }
+
+            if (is_bool($value)) {
+                return (int) $value;
+            }
+
+            return $value;
+        }, $bindings);
     }
 }
