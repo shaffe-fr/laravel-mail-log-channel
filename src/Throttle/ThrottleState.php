@@ -30,29 +30,21 @@ class ThrottleState
         $countKey = $this->cachePrefix.'count:'.$fingerprint;
         $firstSeenKey = $this->cachePrefix.'first:'.$fingerprint;
 
-        // Record the first occurrence timestamp (only set once, sliding TTL)
-        if (! $this->cache->has($firstSeenKey)) {
-            $this->cache->put($firstSeenKey, time(), $this->ttl * 2);
-        } else {
-            // Extend TTL as long as the error keeps happening
-            $this->cache->put($firstSeenKey, $this->cache->get($firstSeenKey), $this->ttl * 2);
+        // Record the first occurrence timestamp using add() which is atomic:
+        // it only writes if the key doesn't already exist.
+        $this->cache->add($firstSeenKey, time(), $this->ttl * 2);
+
+        // Increment the total occurrence counter atomically.
+        // Use add() to initialize if missing, then increment for subsequent hits.
+        if (! $this->cache->add($countKey, 1, $this->ttl * 2)) {
+            $this->cache->increment($countKey);
         }
 
-        // Increment the total occurrence counter (sliding TTL)
-        // Initialize the key if it doesn't exist (some drivers don't support increment on missing keys)
-        if (! $this->cache->has($countKey)) {
-            $this->cache->put($countKey, 1, $this->ttl * 2);
-        } else {
-            $newCount = $this->cache->increment($countKey);
-            $this->cache->put($countKey, (int) $newCount, $this->ttl * 2);
-        }
-
-        if ($this->cache->has($lockKey)) {
+        // Check and set the throttle lock atomically using add().
+        // add() returns false if the key already exists (= we are throttled).
+        if (! $this->cache->add($lockKey, true, $this->ttl)) {
             return true;
         }
-
-        // Not throttled — set the lock
-        $this->cache->put($lockKey, true, $this->ttl);
 
         return false;
     }
