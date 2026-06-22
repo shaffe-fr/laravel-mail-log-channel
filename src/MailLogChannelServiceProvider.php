@@ -34,14 +34,37 @@ class MailLogChannelServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $event) {
-            $this->app->make(QueryCollector::class)->record($event);
-        });
+        // Only listen for queries if the mail channel is configured.
+        // This avoids unnecessary overhead when the package isn't actively used.
+        if ($this->isMailChannelConfigured()) {
+            $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $event) {
+                $this->app->make(QueryCollector::class)->record($event);
+            });
+        }
 
         if ($this->app->runningInConsole()) {
             $this->commands([
                 TestMailLogCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Determine if any logging channel uses the 'mail' driver.
+     */
+    protected function isMailChannelConfigured(): bool
+    {
+        $channels = $this->app['config']->get('logging.channels', []);
+
+        foreach ($channels as $channel) {
+            if (is_array($channel) && ($channel['driver'] ?? null) === 'mail') {
+                // Check if query logging isn't explicitly disabled
+                if (($channel['log_queries'] ?? true) !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
