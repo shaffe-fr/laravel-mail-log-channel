@@ -17,6 +17,14 @@ class QueryCollector
         $this->limit = $limit;
     }
 
+    /**
+     * Set the maximum number of queries to keep.
+     */
+    public function setLimit(int $limit): void
+    {
+        $this->limit = $limit;
+    }
+
     public function record(QueryExecuted $event): void
     {
         $this->total++;

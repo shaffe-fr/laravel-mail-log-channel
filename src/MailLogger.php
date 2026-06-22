@@ -51,6 +51,7 @@ class MailLogger
 
         if ($this->config('log_queries') ?? true) {
             $queryCollector = app(QueryCollector::class);
+            $queryCollector->setLimit($this->config('query_limit') ?? 10);
         }
 
         $mailHandler->pushProcessor(new ContextProcessor(
