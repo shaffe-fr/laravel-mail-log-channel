@@ -160,7 +160,7 @@ class ContextProcessor implements ProcessorInterface
                 try {
                     $context['connection'] = config('queue.default', 'sync');
                     $context['queue'] = config('queue.connections.'.config('queue.default').'.queue', 'default');
-                } catch (\Throwable $e) {
+                } catch (\Throwable) {
                     // Silently ignore
                 }
             }
@@ -193,7 +193,7 @@ class ContextProcessor implements ProcessorInterface
             if ($user) {
                 $context['user'] = $user;
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Request might not be available
         }
 
@@ -211,7 +211,7 @@ class ContextProcessor implements ProcessorInterface
             $action = $route->getActionName();
 
             return $action !== 'Closure' ? $action : null;
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return null;
         }
     }
@@ -219,16 +219,32 @@ class ContextProcessor implements ProcessorInterface
     protected function resolveUser(): ?array
     {
         try {
-            $user = auth()->user();
-            if (! $user) {
-                return null;
+            // Try all configured guards to find an authenticated user.
+            // This handles multi-guard setups (e.g. web + api + admin).
+            $guards = array_keys(config('auth.guards', []));
+
+            foreach ($guards as $guard) {
+                try {
+                    $user = auth()->guard($guard)->user();
+
+                    if ($user) {
+                        // Use the Authenticatable contract's identifier rather
+                        // than the Eloquent-specific getKey(), so non-Eloquent
+                        // user providers are supported too.
+                        return [
+                            'id' => $user->getAuthIdentifier(),
+                            'email' => $user->email ?? null,
+                            'guard' => $guard,
+                        ];
+                    }
+                } catch (\Throwable) {
+                    // Guard driver may not be configured — skip silently.
+                    continue;
+                }
             }
 
-            return [
-                'id' => $user->getKey(),
-                'email' => $user->email ?? null,
-            ];
-        } catch (\Throwable $e) {
+            return null;
+        } catch (\Throwable) {
             return null;
         }
     }
@@ -246,7 +262,7 @@ class ContextProcessor implements ProcessorInterface
             $env['execution_time'] = defined('LARAVEL_START')
                 ? round((microtime(true) - LARAVEL_START) * 1000, 1)
                 : null;
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Silently ignore
         }
 
@@ -281,7 +297,7 @@ class ContextProcessor implements ProcessorInterface
             }
 
             $request = request();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return null;
         }
 
@@ -302,7 +318,7 @@ class ContextProcessor implements ProcessorInterface
             if ($truncatedKeys > 0) {
                 $payload['truncated_keys'] = $truncatedKeys;
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Silently ignore — never let payload collection break logging.
         }
 
@@ -311,7 +327,7 @@ class ContextProcessor implements ProcessorInterface
             if ($files !== []) {
                 $payload['files'] = $files;
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Silently ignore
         }
 
@@ -393,11 +409,12 @@ class ContextProcessor implements ProcessorInterface
     /**
      * Describe uploaded files without reading their contents.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return array<int, array{name: string, type: string|null, size: int|null}>
      */
-    protected function describeUploadedFiles($request): array
+    protected function describeUploadedFiles(mixed $request): array
     {
-        if (! method_exists($request, 'allFiles')) {
+        if (! method_exists($request, 'allFiles')) { /** @phpstan-ignore function.alreadyNarrowedType */
             return [];
         }
 
@@ -426,7 +443,7 @@ class ContextProcessor implements ProcessorInterface
         return $described;
     }
 
-    protected function extractCodeSnippet($record): ?array
+    protected function extractCodeSnippet(LogRecord|array $record): ?array
     {
         $context = $record instanceof LogRecord ? $record->context : ($record['context'] ?? []);
 
@@ -462,7 +479,7 @@ class ContextProcessor implements ProcessorInterface
                 'line' => $line,
                 'code' => $snippet,
             ];
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return null;
         }
     }
@@ -496,7 +513,7 @@ class ContextProcessor implements ProcessorInterface
         return false;
     }
 
-    protected function gatherAdditionalContext($record): ?array
+    protected function gatherAdditionalContext(LogRecord|array $record): ?array
     {
         $context = $record instanceof LogRecord ? $record->context : ($record['context'] ?? []);
 
