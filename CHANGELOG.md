@@ -12,16 +12,22 @@ All notable changes to `laravel-mail-log-channel` will be documented in this fil
 - "Request Payload" and "Uploaded Files" sections in the error email
 - Configurable `query_limit` option to control how many SQL queries are included (default: 10)
 - Multi-guard support: authenticated user is now resolved across all configured auth guards (not just the default)
+- `mail-log:test` gained `--with-query`, `--with-payload`, `--with-context` and `--all` flags to exercise the corresponding features
 
 ### Fixed
 
 - Normalize query bindings (DateTime → string, bool → int) so displayed values match what the database receives
 - Use atomic cache operations (`add()`) in ThrottleState to prevent race conditions under high concurrency
-- Deep clone mailable before each send to prevent shared state when using custom mailables with nested objects
+- Deep clone mailable before each send to prevent shared state when using custom mailables with nested objects; warn when the deep clone falls back to a shallow copy
+- Boolean values in the request payload and context sections now render as `true`/`false` instead of `1`/empty
+- Escape the authenticated user id when rendering the execution context
+- Multi-guard user resolution no longer pollutes the SQL section with internal auth lookups
+- `mail-log:test` auto-detects the first channel using the mail driver when `--channel` is omitted, and reports channel initialization errors instead of falling back to the emergency logger
 
 ### Changed
 
 - QueryExecuted listener is only registered when a mail log channel is actually configured (reduces overhead)
+- Throttle and level-based routing are evaluated before the context processors run, skipping expensive work for records that will not produce an email
 
 ## 3.1.0 - 2026-05-21
 

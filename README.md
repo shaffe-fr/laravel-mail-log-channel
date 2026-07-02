@@ -241,6 +241,11 @@ The last N SQL queries leading up to the error are included in the email, with b
 'log_queries' => false,
 ```
 
+> [!WARNING]
+> Query **bindings are shown as-is and are not redacted**. This is intentional: the whole point of query logging is to reproduce the failing query, and masking the values would defeat it. As a result, a query such as `insert into users (email, password) values (?, ?)` will expose its bound values in the email.
+>
+> Treat error emails as **confidential**: send them to a controlled, access-restricted inbox, and set `'log_queries' => false` if your threat model can't accommodate this. The same applies to the request payload and context sections — redaction there is best-effort on **known** field names only.
+
 ## Request Payload
 
 Capture the incoming request body in the error email to help reproduce HTTP failures. **Disabled by default** because request data is sensitive.
