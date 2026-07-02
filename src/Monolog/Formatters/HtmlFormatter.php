@@ -182,9 +182,7 @@ class HtmlFormatter extends BaseHtmlFormatter
             $output .= $this->sectionTitle('Request Payload');
 
             foreach ($payload['data'] as $key => $value) {
-                $display = is_scalar($value) || $value === null
-                    ? (string) ($value ?? 'null')
-                    : json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $display = $this->displayScalar($value);
 
                 $output .= $this->keyValueRow((string) $key, '<code>'.htmlspecialchars($display).'</code>');
             }
@@ -305,7 +303,7 @@ class HtmlFormatter extends BaseHtmlFormatter
         $output = $this->sectionTitle('Context');
 
         foreach ($data as $key => $value) {
-            $display = is_scalar($value) ? (string) $value : json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $display = $this->displayScalar($value);
             $output .= $this->keyValueRow((string) $key, '<code>'.htmlspecialchars($display).'</code>');
         }
 
@@ -420,6 +418,27 @@ class HtmlFormatter extends BaseHtmlFormatter
     }
 
     // ── Helpers ──────────────────────────────────────────────
+
+    /**
+     * Render a value for display: booleans as true/false, null as null,
+     * other scalars as-is, and arrays/objects as pretty JSON.
+     */
+    protected function displayScalar(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if ($value === null) {
+            return 'null';
+        }
+
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+
+        return (string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
 
     protected function sectionTitle(string $title): string
     {
