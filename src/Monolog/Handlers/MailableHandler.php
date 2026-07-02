@@ -56,36 +56,61 @@ class MailableHandler extends MailHandler
 
     /**
      * {@inheritdoc}
+     *
+     * Level-based suppression and throttling are evaluated here, before the
+     * record is passed to the parent handler. This is deliberate: Monolog runs
+     * the attached processors inside handle() (right before write()), and those
+     * processors do expensive work (reading source files for the code snippet,
+     * copying and redacting the request payload, collecting SQL). Filtering out
+     * suppressed and throttled records up front avoids paying that cost for
+     * records that will never produce an email.
      */
-    protected function write(LogRecord $record): void
+    public function handle(LogRecord $record): bool
     {
-        // If level-based routing is active, check if this level has recipients
-        if ($this->levelRecipients !== null) {
-            $levelName = strtolower($record->level->getName());
+        if (! $this->isHandling($record)) {
+            return false;
+        }
 
-            // Level explicitly set to empty (null/'') — suppress email
-            if (array_key_exists($levelName, $this->levelRecipients) && empty($this->levelRecipients[$levelName])) {
-                return;
-            }
-
-            // No explicit config for this level and no default — skip
-            if (! array_key_exists($levelName, $this->levelRecipients) && ! array_key_exists('default', $this->levelRecipients)) {
-                return;
-            }
-
-            // Default is explicitly empty — suppress
-            if (! array_key_exists($levelName, $this->levelRecipients)
-                && array_key_exists('default', $this->levelRecipients)
-                && empty($this->levelRecipients['default'])) {
-                return;
-            }
+        if ($this->shouldSuppressForLevel($record)) {
+            return $this->bubble === false;
         }
 
         if ($this->throttle && $this->throttle->isThrottled($record)) {
-            return;
+            return $this->bubble === false;
         }
 
-        parent::write($record);
+        return parent::handle($record);
+    }
+
+    /**
+     * Determine whether the record should be suppressed by level-based routing.
+     */
+    protected function shouldSuppressForLevel(LogRecord $record): bool
+    {
+        if ($this->levelRecipients === null) {
+            return false;
+        }
+
+        $levelName = strtolower($record->level->getName());
+
+        // Level explicitly set to empty (null/'') — suppress email
+        if (array_key_exists($levelName, $this->levelRecipients) && empty($this->levelRecipients[$levelName])) {
+            return true;
+        }
+
+        // No explicit config for this level and no default — skip
+        if (! array_key_exists($levelName, $this->levelRecipients) && ! array_key_exists('default', $this->levelRecipients)) {
+            return true;
+        }
+
+        // Default is explicitly empty — suppress
+        if (! array_key_exists($levelName, $this->levelRecipients)
+            && array_key_exists('default', $this->levelRecipients)
+            && empty($this->levelRecipients['default'])) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -205,8 +230,17 @@ class MailableHandler extends MailHandler
         // on complex custom mailables with nested objects.
         try {
             $mailable = unserialize(serialize($this->mailable));
-        } catch (\Throwable) {
-            // Fallback to shallow clone if serialization fails (e.g. closures)
+        } catch (\Throwable $e) {
+            // Serialization failed (e.g. the mailable holds a closure or a
+            // resource). Fall back to a shallow clone, but warn: nested objects
+            // are then shared between sends, which reintroduces the state-leak
+            // risk this deep clone is meant to prevent.
+            error_log(sprintf(
+                '[laravel-mail-log-channel] Deep clone of mailable %s failed (%s); '
+                .'falling back to a shallow clone. Nested state may leak between sends.',
+                get_class($this->mailable),
+                $e->getMessage()
+            ));
             $mailable = clone $this->mailable;
         }
 
