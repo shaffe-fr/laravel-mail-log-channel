@@ -3,7 +3,7 @@
 namespace Shaffe\MailLogChannel\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
+use Shaffe\MailLogChannel\MailLogger;
 
 class TestMailLogCommand extends Command
 {
@@ -34,8 +34,21 @@ class TestMailLogCommand extends Command
 
         $this->info("Sending test log message via [{$channel}] channel at [{$level}] level...");
 
+        $channelConfig = config("logging.channels.{$channel}", []);
+
+        // Instantiate the logger directly instead of going through Log::channel().
+        // Laravel's LogManager swallows exceptions during channel resolution and
+        // falls back to the emergency logger — making errors invisible here.
         try {
-            Log::channel($channel)->log($level, 'This is a test message from mail-log:test', [
+            $logger = app(MailLogger::class)($channelConfig);
+        } catch (\Throwable $e) {
+            $this->error("Failed to initialize channel [{$channel}]: {$e->getMessage()}");
+
+            return self::FAILURE;
+        }
+
+        try {
+            $logger->log($level, 'This is a test message from mail-log:test', [
                 'exception' => new \RuntimeException(
                     'Test exception from mail-log:test command — you can safely ignore this.',
                     42
