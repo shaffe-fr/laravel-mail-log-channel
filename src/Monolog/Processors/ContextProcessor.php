@@ -219,6 +219,11 @@ class ContextProcessor implements ProcessorInterface
     protected function resolveUser(): ?array
     {
         try {
+            // Resolving a user can trigger database queries (e.g. token or
+            // session guards hitting the users table). Pause the collector so
+            // these internal lookups don't pollute the SQL section of the email.
+            $this->queryCollector?->pause();
+
             // Try all configured guards to find an authenticated user.
             // This handles multi-guard setups (e.g. web + api + admin).
             $guards = array_keys(config('auth.guards', []));
@@ -246,6 +251,8 @@ class ContextProcessor implements ProcessorInterface
             return null;
         } catch (\Throwable) {
             return null;
+        } finally {
+            $this->queryCollector?->resume();
         }
     }
 

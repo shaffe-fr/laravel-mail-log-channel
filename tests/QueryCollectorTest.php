@@ -149,4 +149,21 @@ class QueryCollectorTest extends TestCase
 
         $this->assertSame([1, 0], $collector->getQueries()[0]['bindings']);
     }
+
+    public function test_pause_stops_recording(): void
+    {
+        $collector = new QueryCollector();
+
+        $collector->record($this->makeQueryEvent('SELECT 1'));
+        $collector->pause();
+        $collector->record($this->makeQueryEvent('SELECT 2'));
+        $collector->resume();
+        $collector->record($this->makeQueryEvent('SELECT 3'));
+
+        $queries = $collector->getQueries();
+        $this->assertCount(2, $queries);
+        $this->assertEquals('SELECT 1', $queries[0]['sql']);
+        $this->assertEquals('SELECT 3', $queries[1]['sql']);
+        $this->assertEquals(2, $collector->getTotal());
+    }
 }

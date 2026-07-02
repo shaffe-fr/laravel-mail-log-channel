@@ -12,6 +12,8 @@ class QueryCollector
 
     protected int $total = 0;
 
+    protected bool $paused = false;
+
     public function __construct(int $limit = 10)
     {
         $this->limit = $limit;
@@ -25,8 +27,31 @@ class QueryCollector
         $this->limit = $limit;
     }
 
+    /**
+     * Temporarily stop recording queries.
+     *
+     * Used to exclude internal lookups (e.g. resolving the authenticated user)
+     * that would otherwise pollute the collected queries.
+     */
+    public function pause(): void
+    {
+        $this->paused = true;
+    }
+
+    /**
+     * Resume recording queries after a pause().
+     */
+    public function resume(): void
+    {
+        $this->paused = false;
+    }
+
     public function record(QueryExecuted $event): void
     {
+        if ($this->paused) {
+            return;
+        }
+
         $this->total++;
 
         $this->queries[] = [
@@ -50,6 +75,7 @@ class QueryCollector
     {
         $this->queries = [];
         $this->total = 0;
+        $this->paused = false;
     }
 
     public function getQueries(): array
