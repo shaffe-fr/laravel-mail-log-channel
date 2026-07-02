@@ -9,14 +9,20 @@ class TestMailLogCommand extends Command
 {
     protected $signature = 'mail-log:test
         {--level=error : The log level to test (debug, info, notice, warning, error, critical, alert, emergency)}
-        {--channel=mail : The log channel to use}';
+        {--channel= : The log channel to use (auto-detects the first channel using the mail driver if omitted)}';
 
     protected $description = 'Send a test error email to verify the mail log channel configuration';
 
     public function handle(): int
     {
         $level = $this->option('level');
-        $channel = $this->option('channel');
+        $channel = $this->option('channel') ?: $this->resolveMailChannel();
+
+        if (! $channel) {
+            $this->error('No log channel using the "mail" driver found. Please specify one with --channel.');
+
+            return self::FAILURE;
+        }
 
         $validLevels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
 
@@ -44,5 +50,22 @@ class TestMailLogCommand extends Command
         $this->info('Test email sent successfully. Check your inbox.');
 
         return self::SUCCESS;
+    }
+
+
+    /**
+     * Find the first logging channel configured with the 'mail' driver.
+     */
+    protected function resolveMailChannel(): ?string
+    {
+        $channels = config('logging.channels', []);
+
+        foreach ($channels as $name => $config) {
+            if (is_array($config) && ($config['driver'] ?? null) === 'mail') {
+                return $name;
+            }
+        }
+
+        return null;
     }
 }

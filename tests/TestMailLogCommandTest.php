@@ -29,6 +29,6 @@ class TestMailLogCommandTest extends TestCase
         $definition = $command->getDefinition();
 
         $this->assertTrue($definition->hasOption('channel'));
-        $this->assertEquals('mail', $definition->getOption('channel')->getDefault());
+        $this->assertNull($definition->getOption('channel')->getDefault());
     }
 }
