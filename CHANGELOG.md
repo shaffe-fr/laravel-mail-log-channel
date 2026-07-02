@@ -2,7 +2,7 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
-## Unreleased
+## 3.2.0 - 2026-07-02
 
 ### Added
 
