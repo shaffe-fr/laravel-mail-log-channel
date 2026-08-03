@@ -33,6 +33,7 @@ class HtmlFormatter extends BaseHtmlFormatter
         $output .= $this->buildRequestPayloadSection($record);
         $output .= $this->buildExceptionSection($record);
         $output .= $this->buildAdditionalContextSection($record);
+        $output .= $this->buildLaravelContextSection($record);
         $output .= $this->buildCodeSnippetSection($record);
         $output .= $this->buildStackTraceSection($record);
         $output .= $this->buildSqlQueriesSection($record);
@@ -304,6 +305,46 @@ class HtmlFormatter extends BaseHtmlFormatter
 
         foreach ($data as $key => $value) {
             $display = $this->displayScalar($value);
+            $output .= $this->keyValueRow((string) $key, '<code>'.htmlspecialchars($display).'</code>');
+        }
+
+        return $output;
+    }
+
+    protected function buildLaravelContextSection($record): string
+    {
+        $extra = $record instanceof LogRecord ? $record->extra : ($record['extra'] ?? []);
+
+        $knownKeys = [
+            'execution_context',
+            'environment',
+            'request_payload',
+            'code_snippet',
+            'sql_queries',
+            'additional_context',
+            'throttle_occurrence_count',
+            'throttle_first_seen_at',
+        ];
+
+        $contextData = array_diff_key($extra, array_flip($knownKeys));
+
+        if (empty($contextData)) {
+            return '';
+        }
+
+        $output = $this->sectionTitle('Application Context');
+
+        foreach ($contextData as $key => $value) {
+            if (is_array($value) || is_object($value)) {
+                $display = (string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            } else {
+                $display = $value === null ? 'null' : (string) $value;
+            }
+
+            if (mb_strlen($display) > 2000) {
+                $display = mb_substr($display, 0, 2000).'…';
+            }
+
             $output .= $this->keyValueRow((string) $key, '<code>'.htmlspecialchars($display).'</code>');
         }
 

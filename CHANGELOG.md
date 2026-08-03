@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-mail-log-channel` will be documented in this file.
 
+## 3.3.0 - 2026-08-03
+
+### Added
+
+- "Application Context" section in error emails: data added via Laravel's `Context` facade (`Context::add(...)`) is now automatically rendered in a dedicated section, using the same key/value style as the existing "Context" section
+- Array/object values are displayed as pretty-printed JSON; scalar values are escaped; values longer than 2 000 characters are truncated with an ellipsis
+- The section only appears when extra keys not already consumed by the formatter are present — fully backward-compatible with Laravel 10 (where `ContextLogProcessor` does not exist)
+
 ## 3.2.0 - 2026-07-02
 
 ### Added
